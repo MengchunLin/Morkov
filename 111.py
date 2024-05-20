@@ -1,5 +1,6 @@
 import numpy as np
 import operator as op
+import matplotlib.pyplot as plt
 
 # 定義模型的間隔、寬度、深度、面積、孔洞數量和地質類型數量等參數
 interval = 0.5
@@ -66,7 +67,6 @@ for i in range(np.size(geo_matrix, 1)):
                     Tmatrix_V[m][n] += 1
 
 # 正規化轉移矩陣
-# 一列總和=1
 count_V = np.sum(Tmatrix_V, axis=1)
 for i in range(np.size(Tmatrix_V, 1)):
     for j in range(np.size(Tmatrix_V, 1)):
@@ -99,7 +99,6 @@ for i in range(np.size(Tmatrix_H, 1)):
 L_state = 0
 M_state = 0
 Q_state = 0
-G_state = 0
 Nx = 0
 a = 0
 current_matrix = np.array([[0.0, 0.0, 0.0, 0.0]])
@@ -107,54 +106,61 @@ transitionName = np.array([[1, 2, 3, 4]])
 
 # 進行地質類型的預測
 for layer in range(2,D+1,1):
-	for i in range(1,W+1,1):
-		L_state = 0
-		M_state = 0
-		Q_state = 0
-		if i > Hole1 and i < Hole2: 
-			L_state = group_number[(i-2)+(layer-1)*W]-1
-			M_state = group_number[(i-1)+(layer-2)*W]-1
-			Q_state = group_number[(Hole2-1)+(layer-1)*W]-1
-			Nx = Hole2
-		elif i > Hole2 and i < Hole3:
-			L_state = group_number[(i-2)+(layer-1)*W]-1
-			M_state = group_number[(i-1)+(layer-2)*W]-1
-			Q_state = group_number[(Hole3-1)+(layer-1)*W]-1
-			Nx = Hole3
-		elif i > Hole3 and i < Hole4:
-			L_state = group_number[(i-2)+(layer-1)*W]-1
-			M_state = group_number[(i-1)+(layer-2)*W]-1
-			Q_state = group_number[(Hole4-1)+(layer-1)*W]-1
-			Nx = Hole4
-		elif i > Hole4 and i < Hole5:
-			L_state = group_number[(i-2)+(layer-1)*W]-1
-			M_state = group_number[(i-1)+(layer-2)*W]-1
-			Q_state = group_number[(Hole5-1)+(layer-1)*W]-1
-			Nx = Hole5
-       
-		if i == Hole1 or i == Hole2 or i == Hole3 or i == Hole4 or i == Hole5:
-			a = a+1
-		else:
-			TV = Tmatrix_V
-			TH = Tmatrix_H
-			Nx_TH = Tmatrix_H
-			f_sum = 0
-			k_sum = 0
-			for N in range(1,Nx-i,1):
-				Nx_TH = np.dot(Nx_TH,Tmatrix_H)
-			for f in range(0,typenumber,1):
-				f_item1 = Tmatrix_H[L_state.astype(int)][f]
-				f_item2 = Nx_TH[f][Q_state.astype(int)]
-				f_item3 = Tmatrix_V[M_state.astype(int)][f] 
-				f_sum = f_sum + (f_item1*f_item2*f_item3)
-			for k in range(0,typenumber,1):
-				k_item1 = Tmatrix_H[L_state.astype(int)][k]
-				k_item2 = Nx_TH[k][Q_state.astype(int)]
-				k_item3 = Tmatrix_V[M_state.astype(int)][k]
-				k_sum = k_item1*k_item2*k_item3
-				current_matrix [0][k] = k_sum/f_sum
-			group_number[(i-1)+(layer-1)*W] = np.random.choice(transitionName[0],replace=True,p=current_matrix[0])
+    for i in range(1,W+1,1):
+        L_state = 0
+        M_state = 0
+        Q_state = 0
+        if i > Hole1 and i < Hole2: 
+            L_state = group_number[(i-2)+(layer-1)*W]-1
+            M_state = group_number[(i-1)+(layer-2)*W]-1
+            Q_state = group_number[(Hole2-1)+(layer-1)*W]-1
+            Nx = Hole2
+        elif i > Hole2 and i < Hole3:
+            L_state = group_number[(i-2)+(layer-1)*W]-1
+            M_state = group_number[(i-1)+(layer-2)*W]-1
+            Q_state = group_number[(Hole3-1)+(layer-1)*W]-1
+            Nx = Hole3
+        elif i > Hole3 and i < Hole4:
+            L_state = group_number[(i-2)+(layer-1)*W]-1
+            M_state = group_number[(i-1)+(layer-2)*W]-1
+            Q_state = group_number[(Hole4-1)+(layer-1)*W]-1
+            Nx = Hole4
+        elif i > Hole4 and i < Hole5:
+            L_state = group_number[(i-2)+(layer-1)*W]-1
+            M_state = group_number[(i-1)+(layer-2)*W]-1
+            Q_state = group_number[(Hole5-1)+(layer-1)*W]-1
+            Nx = Hole5
 
-print("Tmatrix_V:\n", Tmatrix_V)
-print("Tmatrix_H:\n", Tmatrix_H)
-print(Nx_TH)
+        if i == Hole1 or i == Hole2 or i == Hole3 or i == Hole4 or i == Hole5:
+            a = a+1
+        else:
+            TV = Tmatrix_V
+            TH = Tmatrix_H
+            Nx_TH = Tmatrix_H
+            f_sum = 0
+            k_sum = 0
+            for N in range(1,Nx-i,1):
+                Nx_TH = np.dot(Nx_TH,Tmatrix_H)
+            for f in range(0,typenumber,1):
+                f_item1 = Tmatrix_H[L_state.astype(int)][f]
+                f_item2 = Nx_TH[f][Q_state.astype(int)]
+                f_item3 = Tmatrix_V[M_state.astype(int)][f] 
+                f_sum = f_sum + (f_item1*f_item2*f_item3)
+            for k in range(0,typenumber,1):
+                k_item1 = Tmatrix_H[L_state.astype(int)][k]
+                k_item2 = Nx_TH[k][Q_state.astype(int)]
+                k_item3 = Tmatrix_V[M_state.astype(int)][k]
+                k_sum = k_item1*k_item2*k_item3
+                current_matrix[0][k] = k_sum/f_sum
+            group_number[(i-1)+(layer-1)*W] = np.random.choice(transitionName[0], replace=True, p=current_matrix[0])
+
+# 重塑地質類型分組數組為矩陣
+group_matrix = group_number.reshape(D, W)
+
+# 可視化地質類型分布
+plt.imshow(group_matrix, cmap='tab10', origin='upper')
+plt.colorbar(label='Geological Type')
+plt.title('Geological Type Prediction')
+plt.xlabel('Width (units)')
+plt.ylabel('Depth ')
+plt.show()
