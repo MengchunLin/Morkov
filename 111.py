@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 
 # 定義模型的間隔、寬度、深度、面積、孔洞數量和地質類型數量等參數
 interval = 0.5
-W = int(70/interval)
-D = int(25/interval)
+W = int(70/interval) # 140
+D = int(25/interval) # 50
 A = W * D
 Hole = 5
 typenumber = 4
@@ -14,37 +14,43 @@ typenumber = 4
 group_number = np.zeros(A)
 
 # 從CSV文件中讀取地質矩陣數據
-geo_matrix = np.loadtxt('test.csv', delimiter=",", skiprows=1)
+geo_matrix = np.loadtxt('test.csv', delimiter=",", skiprows=1) # saperate by ',' , skip first row
 
 # 定義各個孔洞的位置
+# 0.5 per unit
 Hole1 = 1    
-Hole2 = 28 * 2   
-Hole3 = 46 * 2    
+Hole2 = 28 * 2 # 28/0.5  
+Hole3 = 46 * 2
 Hole4 = 58 * 2 
 Hole5 = 70 * 2    
 
 # 將地質數據中的類型分組存儲到group_number數組中
+# Horizontal has two type of soil at the  first layer
+# First matrix?
 for i in range(1, 74, 1):
     group_number[i - 1] = 1
 for i in range(74, 140, 1):
     group_number[i - 1] = 2
 
 # 將各個孔洞位置的地質類型從geo_matrix中放入group_number數組中
+# 橫的一行一行過去
+# D=50
 for j in range(1, D + 1, 1):
-    group_number[(Hole1 - 1) + (j - 1) * W] = geo_matrix[j - 1][0]
-    group_number[(Hole2 - 1) + (j - 1) * W] = geo_matrix[j - 1][1]
-    group_number[(Hole3 - 1) + (j - 1) * W] = geo_matrix[j - 1][2]
-    group_number[(Hole4 - 1) + (j - 1) * W] = geo_matrix[j - 1][3]
-    group_number[(Hole5 - 1) + (j - 1) * W] = geo_matrix[j - 1][4]
+    group_number[(Hole1 - 1) + (j - 1) * W] = geo_matrix[j - 1][0] # borehole 1
+    group_number[(Hole2 - 1) + (j - 1) * W] = geo_matrix[j - 1][1] # borehole 2
+    group_number[(Hole3 - 1) + (j - 1) * W] = geo_matrix[j - 1][2] # borehole 3
+    group_number[(Hole4 - 1) + (j - 1) * W] = geo_matrix[j - 1][3] # borehole 4
+    group_number[(Hole5 - 1) + (j - 1) * W] = geo_matrix[j - 1][4] # borehole 5
 
 # 初始化計算地質類型轉移概率的變量
 T_t_V = np.zeros(len(geo_matrix))
 soiltype_V = {}
+# print(len(geo_matrix)) =50
+print(np.size(geo_matrix))
 
 # 統計各地質類型的出現次數
 for i in range(np.size(geo_matrix, 1)):
-    for j in range(len(geo_matrix)):
-        T_t_V[j] = geo_matrix[j][i]
+    for j in range(len(geo_matrix)):        T_t_V[j] = geo_matrix[j][i]
     for k in T_t_V[0:len(T_t_V)]:
         soiltype_V[k] = soiltype_V.get(k, 0) + 1
 
@@ -78,6 +84,7 @@ K = 9.3
 # 初始化有權重的積分估計轉移概率矩陣和轉移矩陣
 HPCM = np.zeros([len(count_V), len(count_V)])
 Tmatrix_H = np.zeros([len(count_V), len(count_V)])
+
 
 # 計算有權重的積分估計轉移概率矩陣和轉移矩陣
 for i in range(np.size(Tmatrix_H, 1)):
