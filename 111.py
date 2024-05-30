@@ -14,7 +14,7 @@ typenumber = 4
 group_number = np.zeros(A)
 
 # 從CSV文件中讀取地質矩陣數據
-geo_matrix = np.loadtxt('test.csv', delimiter=",", skiprows=1) # saperate by ',' , skip first row
+geo_matrix = np.loadtxt('test - 複製.csv', delimiter=",", skiprows=1) # saperate by ',' , skip first row
 
 # 定義各個孔洞的位置
 # 0.5 per unit
@@ -46,13 +46,15 @@ for j in range(1, D + 1, 1):
 T_t_V = np.zeros(len(geo_matrix))
 soiltype_V = {}
 # print(len(geo_matrix)) =50
-print(np.size(geo_matrix))
+# print(np.size(geo_matrix)) =250
 
 # 統計各地質類型的出現次數
 for i in range(np.size(geo_matrix, 1)):
-    for j in range(len(geo_matrix)):        T_t_V[j] = geo_matrix[j][i]
+    for j in range(len(geo_matrix)):
+        T_t_V[j] = geo_matrix[j][i]
     for k in T_t_V[0:len(T_t_V)]:
         soiltype_V[k] = soiltype_V.get(k, 0) + 1
+print(T_t_V) # 50個數字
 
 # 將地質類型按照類型值排序
 soiltype_V = sorted(soiltype_V.items(), key=op.itemgetter(0), reverse=False)
