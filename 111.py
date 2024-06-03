@@ -1,28 +1,39 @@
 import numpy as np
 import operator as op
 import matplotlib.pyplot as plt
-
+Matrix4D="test.csv"
+Matrix5D='5DMatrix.csv'
 # 定義模型的間隔、寬度、深度、面積、孔洞數量和地質類型數量等參數
 interval = 0.5
-W = int(140/interval) # 140
-D = int(50/interval) # 50
+W = int(70/interval) # 140
+D = int(25/interval) # 50
 A = W * D
-Hole = 5
-typenumber = 4
+geo_matrix = np.loadtxt(Matrix4D, delimiter=",", skiprows=1) # saperate by ',' , skip first row
+
+
+
+Hole = geo_matrix.shape[1]
+print('共有',Hole,'個孔')
+
+
+# 獲取不同數字的數量
+unique_numbers = np.unique(geo_matrix)
+typenumber = len(unique_numbers)
+print('共有',typenumber,'種土讓材質')
+
+
 
 # 初始化地質類型的分組數組
 group_number = np.zeros(A)
-
 # 從CSV文件中讀取地質矩陣數據
-geo_matrix = np.loadtxt('test.csv', delimiter=",", skiprows=1) # saperate by ',' , skip first row
 
 # 定義各個孔洞的位置
 # 0.5 per unit
 Hole1 = 1    
-Hole2 = 28 * 2 # 28/0.5  
-Hole3 = 46 * 2
-Hole4 = 58 * 2 
-Hole5 = 70 * 2    
+Hole2 = int(28 /interval) # 28/0.5  
+Hole3 = int(46 /interval)
+Hole4 = int(58 /interval)
+Hole5 = int(70 /interval)    
 
 # 將地質數據中的類型分組存儲到group_number數組中
 # Horizontal has two type of soil at the  first layer
@@ -59,7 +70,7 @@ for i in range(np.size(geo_matrix, 1)):
 
 # 將地質類型按照類型值排序
 soiltype_V = sorted(soiltype_V.items(), key=op.itemgetter(0), reverse=False)
-print(soiltype_V)
+print("lenn",len(soiltype_V))
 
 # 初始化積分估計轉移概率矩陣和轉移矩陣
 VPCM = np.zeros([len(soiltype_V), len(soiltype_V)])
@@ -118,8 +129,8 @@ M_state = 0
 Q_state = 0
 Nx = 0
 a = 0
-current_matrix = np.array([[0.0, 0.0, 0.0, 0.0]])
-transitionName = np.array([[1, 2, 3, 4]])
+current_matrix = np.array([[0.0, 0.0, 0.0, 0.0,0.0]])
+transitionName = np.array([[1, 2, 3, 4,5]])
 
 # 進行地質類型的預測
 for layer in range(2,D+1,1):
