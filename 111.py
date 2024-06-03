@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 
 # 定義模型的間隔、寬度、深度、面積、孔洞數量和地質類型數量等參數
 interval = 0.5
-W = int(70/interval) # 140
-D = int(25/interval) # 50
+W = int(140/interval) # 140
+D = int(50/interval) # 50
 A = W * D
 Hole = 5
 typenumber = 4
@@ -46,44 +46,45 @@ for j in range(1, D + 1, 1):
 T_t_V = np.zeros(len(geo_matrix))
 soiltype_V = {}
 # print(len(geo_matrix)) =50
-print(np.size(geo_matrix))
+# print(np.size(geo_matrix)) =250
 
 # 統計各地質類型的出現次數
 for i in range(np.size(geo_matrix, 1)):
     for j in range(len(geo_matrix)):
         T_t_V[j] = geo_matrix[j][i]
     for k in T_t_V[0:len(T_t_V)]:
+        #print('k',k)
         soiltype_V[k] = soiltype_V.get(k, 0) + 1
+# 50個數字
 
 # 將地質類型按照類型值排序
 soiltype_V = sorted(soiltype_V.items(), key=op.itemgetter(0), reverse=False)
-# print(soiltype_V) = [(1.0, 32), (2.0, 167), (3.0, 42), (4.0, 9)]
+print(soiltype_V)
 
 # 初始化積分估計轉移概率矩陣和轉移矩陣
-VPCM = np.zeros([len(soiltype_V), len(soiltype_V)]) # 轉移概率
-Tmatrix_V = np.zeros([len(soiltype_V), len(soiltype_V)]) #轉移矩陣
-# print(VPCM)
-# print(Tmatrix_V)
-print(geo_matrix)
+VPCM = np.zeros([len(soiltype_V), len(soiltype_V)])
+Tmatrix_V = np.zeros([len(soiltype_V), len(soiltype_V)])
+
 # 計算積分估計轉移概率矩陣和轉移矩陣
-for i in range(np.size(geo_matrix, 1)): # 250次
-    for j in range(len(geo_matrix)): # 50次
+for i in range(np.size(geo_matrix, 1)):
+    for j in range(len(geo_matrix)):
         T_t_V[j] = geo_matrix[j][i]
+
+    
+    # 判斷是否轉化
     for k in range(len(T_t_V) - 1): # 49次
-        for m in range(len(soiltype_V)):
+        for m in range(len(soiltype_V)): #3次
             for n in range(len(soiltype_V)):
                 if T_t_V[k] == soiltype_V[m][0] and T_t_V[k + 1] == soiltype_V[n][0]:
                     VPCM[m][n] += 1
                     Tmatrix_V[m][n] += 1
-print(T_t_V)
-print(VPCM)
-print(Tmatrix_V)
 
 # 正規化轉移矩陣
 count_V = np.sum(Tmatrix_V, axis=1)
 for i in range(np.size(Tmatrix_V, 1)):
     for j in range(np.size(Tmatrix_V, 1)):
         Tmatrix_V[i][j] = Tmatrix_V[i][j] / count_V[i]
+print(count_V)
 
 # 設置常數K
 K = 9.3
@@ -91,6 +92,7 @@ K = 9.3
 # 初始化有權重的積分估計轉移概率矩陣和轉移矩陣
 HPCM = np.zeros([len(count_V), len(count_V)])
 Tmatrix_H = np.zeros([len(count_V), len(count_V)])
+
 
 
 # 計算有權重的積分估計轉移概率矩陣和轉移矩陣
@@ -102,6 +104,7 @@ for i in range(np.size(Tmatrix_H, 1)):
         else:
             HPCM[i][j] = VPCM[i][j]
             Tmatrix_H[i][j] = VPCM[i][j]
+
 
 # 正規化轉移矩陣
 count_H = np.sum(Tmatrix_H, axis=1)
@@ -174,7 +177,7 @@ group_matrix = group_number.reshape(D, W)
 # 可視化地質類型分布
 plt.imshow(group_matrix, cmap='tab10', origin='upper')
 plt.colorbar(label='Geological Type')
-plt.title('Markov Geological Type Prediction')
+plt.title('Geological Type Prediction')
 plt.xlabel('Width (units)')
-plt.ylabel('Depth(units)')
-plt.show()
+plt.ylabel('Depth ')
+plt.show() 

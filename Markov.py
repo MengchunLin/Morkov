@@ -157,4 +157,3 @@ for layer in range(2,D+1,1):
 
 print("Tmatrix_V:\n", Tmatrix_V)
 print("Tmatrix_H:\n", Tmatrix_H)
-print(Nx_TH)
