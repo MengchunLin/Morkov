@@ -50,27 +50,34 @@ print(np.size(geo_matrix))
 
 # 統計各地質類型的出現次數
 for i in range(np.size(geo_matrix, 1)):
-    for j in range(len(geo_matrix)):        T_t_V[j] = geo_matrix[j][i]
+    for j in range(len(geo_matrix)):
+        T_t_V[j] = geo_matrix[j][i]
     for k in T_t_V[0:len(T_t_V)]:
         soiltype_V[k] = soiltype_V.get(k, 0) + 1
 
 # 將地質類型按照類型值排序
 soiltype_V = sorted(soiltype_V.items(), key=op.itemgetter(0), reverse=False)
+# print(soiltype_V) = [(1.0, 32), (2.0, 167), (3.0, 42), (4.0, 9)]
 
 # 初始化積分估計轉移概率矩陣和轉移矩陣
-VPCM = np.zeros([len(soiltype_V), len(soiltype_V)])
-Tmatrix_V = np.zeros([len(soiltype_V), len(soiltype_V)])
-
+VPCM = np.zeros([len(soiltype_V), len(soiltype_V)]) # 轉移概率
+Tmatrix_V = np.zeros([len(soiltype_V), len(soiltype_V)]) #轉移矩陣
+# print(VPCM)
+# print(Tmatrix_V)
+print(geo_matrix)
 # 計算積分估計轉移概率矩陣和轉移矩陣
-for i in range(np.size(geo_matrix, 1)):
-    for j in range(len(geo_matrix)):
+for i in range(np.size(geo_matrix, 1)): # 250次
+    for j in range(len(geo_matrix)): # 50次
         T_t_V[j] = geo_matrix[j][i]
-    for k in range(len(T_t_V) - 1):
+    for k in range(len(T_t_V) - 1): # 49次
         for m in range(len(soiltype_V)):
             for n in range(len(soiltype_V)):
                 if T_t_V[k] == soiltype_V[m][0] and T_t_V[k + 1] == soiltype_V[n][0]:
                     VPCM[m][n] += 1
                     Tmatrix_V[m][n] += 1
+print(T_t_V)
+print(VPCM)
+print(Tmatrix_V)
 
 # 正規化轉移矩陣
 count_V = np.sum(Tmatrix_V, axis=1)
@@ -167,7 +174,7 @@ group_matrix = group_number.reshape(D, W)
 # 可視化地質類型分布
 plt.imshow(group_matrix, cmap='tab10', origin='upper')
 plt.colorbar(label='Geological Type')
-plt.title('Geological Type Prediction')
+plt.title('Markov Geological Type Prediction')
 plt.xlabel('Width (units)')
-plt.ylabel('Depth ')
+plt.ylabel('Depth(units)')
 plt.show()
