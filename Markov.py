@@ -3,7 +3,7 @@ import operator as op
 import matplotlib.pyplot as plt
 
 # 定義模型的間隔、寬度、深度、面積、孔洞數量和地質類型數量等參數
-interval = 1
+interval = 0.5
 W = int(70/interval) # 140
 D = int(25/interval) # 50
 A = W * D
