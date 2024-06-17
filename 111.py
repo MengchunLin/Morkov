@@ -1,17 +1,19 @@
 import numpy as np
 import operator as op
 import matplotlib.pyplot as plt
+import difflib
+
 Matrix4D="test.csv"
 Matrix5D='5DMatrix.csv'
-
 sixHole='6Hole.csv'
+CECI_borehole='CECI_borehole.csv'
 
 # 定義模型的間隔、寬度、深度、面積、孔洞數量和地質類型數量等參數
-interval = 0.5
+interval = 1
 W = int(70/interval) # 140
-D = int(25/interval) # 50
+D = int(105/interval) # 50
 A = W * D
-geo_matrix = np.loadtxt(sixHole, delimiter=",", skiprows=1) # saperate by ',' , skip first row
+geo_matrix = np.loadtxt(CECI_borehole, delimiter=",", skiprows=2) 
 
 
 
@@ -30,13 +32,13 @@ group_number = np.zeros(A)
 # 定義各個孔洞的位置
 # 0.5 per unit
 Hole1 = 1    
-Hole2 = int(28 /interval) # 28/0.5  
-Hole3 = int(46 /interval)
-Hole4 = int(58 /interval)
-Hole5 = int(64 /interval) 
+# Hole2 = int(28 /interval) # 28/0.5  
+# Hole3 = int(46 /interval)
+# Hole4 = int(58 /interval)
+# Hole5 = int(64 /interval) 
 Hole6 = int(70 /interval)    
 
-HoleLocation=[Hole1,Hole2,Hole3,Hole4,Hole5,Hole6]
+HoleLocation=[Hole1,Hole6]
 # 將地質數據中的類型分組存儲到group_number數組中
 # Horizontal has two type of soil at the  first layer
 # First matrix?
@@ -48,9 +50,13 @@ for i in range(74, 140, 1):
 # 將各個孔洞位置的地質類型從geo_matrix中放入group_number數組中
 # 橫的一行一行過去
 # D=50
-for i in range(1, D + 1, 1):
-    for j in range(Hole):
-        group_number[(HoleLocation[j] - 1) + (i - 1) * W] = geo_matrix[i - 1][j] 
+# for i in range(1, D + 3, 1):
+#     for j in range(Hole):
+#         group_number[(HoleLocation[j] - 1) + (i - 1) * W] = geo_matrix[i - 1][j] 
+for i in range(1, min(D, geo_matrix.shape[0]) + 1):
+    for j, loc in enumerate(HoleLocation):
+        if loc - 1 + (i - 1) * W < A:
+            group_number[loc - 1 + (i - 1) * W] = geo_matrix[i - 1][j]
        
 # 初始化計算地質類型轉移概率的變量
 T_t_V = np.zeros(len(geo_matrix))
