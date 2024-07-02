@@ -5,17 +5,16 @@ import difflib
 
 Matrix4D="test.csv"
 Matrix5D='5DMatrix.csv'
+
 sixHole='6Hole.csv'
-CECI_borehole='CECI_borehole.csv'
 
 # 定義模型的間隔、寬度、深度、面積、孔洞數量和地質類型數量等參數
-interval = 1
+interval = 0.5
 W = int(70/interval) # 140
-D = int(105/interval) # 50
+D = int(25/interval) # 50
 A = W * D
-geo_matrix = np.loadtxt(CECI_borehole, delimiter=",", skiprows=2) 
-
-
+geo_matrix = np.loadtxt(Matrix4D, delimiter=",", skiprows=1) # saperate by ',' , skip first row
+geo_matrix=np.delete(geo_matrix, 2, axis=1)
 
 Hole = geo_matrix.shape[1]
 print('共有',Hole,'個孔')
@@ -32,13 +31,13 @@ group_number = np.zeros(A)
 # 定義各個孔洞的位置
 # 0.5 per unit
 Hole1 = 1    
-# Hole2 = int(28 /interval) # 28/0.5  
+Hole2 = int(28 /interval) # 28/0.5  
 # Hole3 = int(46 /interval)
-# Hole4 = int(58 /interval)
-# Hole5 = int(64 /interval) 
-Hole6 = int(70 /interval)    
+Hole4 = int(58 /interval)
+Hole5 = int(70 /interval) 
+# Hole6 = int(70 /interval)    
 
-HoleLocation=[Hole1,Hole6]
+HoleLocation=[Hole1,Hole2,Hole4,Hole5]
 # 將地質數據中的類型分組存儲到group_number數組中
 # Horizontal has two type of soil at the  first layer
 # First matrix?
@@ -50,17 +49,14 @@ for i in range(74, 140, 1):
 # 將各個孔洞位置的地質類型從geo_matrix中放入group_number數組中
 # 橫的一行一行過去
 # D=50
-# for i in range(1, D + 3, 1):
-#     for j in range(Hole):
-#         group_number[(HoleLocation[j] - 1) + (i - 1) * W] = geo_matrix[i - 1][j] 
-for i in range(1, min(D, geo_matrix.shape[0]) + 1):
-    for j, loc in enumerate(HoleLocation):
-        if loc - 1 + (i - 1) * W < A:
-            group_number[loc - 1 + (i - 1) * W] = geo_matrix[i - 1][j]
+for i in range(1, D + 1, 1):
+    for j in range(Hole):
+        group_number[(HoleLocation[j] - 1) + (i - 1) * W] = geo_matrix[i - 1][j] 
        
 # 初始化計算地質類型轉移概率的變量
 T_t_V = np.zeros(len(geo_matrix))
 soiltype_V = {}
+print(T_t_V)
 # print(len(geo_matrix)) =50
 # print(np.size(geo_matrix)) =250
 
@@ -99,15 +95,15 @@ for i in range(np.size(Tmatrix_V, 1)):
     for j in range(np.size(Tmatrix_V, 1)):
         Tmatrix_V[i][j] = Tmatrix_V[i][j] / count_V[i]
 print(count_V)
-
+ 
 # 設置常數K
 K = 9.3
 
 # 初始化有權重的積分估計轉移概率矩陣和轉移矩陣
 HPCM = np.zeros([len(count_V), len(count_V)])
 Tmatrix_H = np.zeros([len(count_V), len(count_V)])
-
-
+# print(Tmatrix_H.size)=16
+print(VPCM)
 
 # 計算有權重的積分估計轉移概率矩陣和轉移矩陣
 for i in range(np.size(Tmatrix_H, 1)):
@@ -118,6 +114,8 @@ for i in range(np.size(Tmatrix_H, 1)):
         else:
             HPCM[i][j] = VPCM[i][j]
             Tmatrix_H[i][j] = VPCM[i][j]
+        print(HPCM[i][j])
+
 
 
 # 正規化轉移矩陣
@@ -132,8 +130,8 @@ M_state = 0
 Q_state = 0
 Nx = 0
 a = 0
-current_matrix = np.array([[0.0, 0.0, 0.0, 0.0,0.0]])
-transitionName = np.array([[1, 2, 3, 4,5]])
+current_matrix = np.array([[0.0, 0.0, 0.0, 0.0]])
+transitionName = np.array([[1, 2, 4,5]])
 
 conditions = {}
 for j in range(1, len(HoleLocation)):
