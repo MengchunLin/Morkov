@@ -53,12 +53,15 @@ for i in range(74, 140, 1):
 for i in range(1, D + 1, 1):
     for j in range(Hole):
         group_number[(HoleLocation[j] - 1) + (i - 1) * W] = geo_matrix[i - 1][j] 
+
+
        
 # 初始化計算地質類型轉移概率的變量
 T_t_V = np.zeros(len(geo_matrix))
 soiltype_V = {}
 # print(len(geo_matrix)) =50
 # print(np.size(geo_matrix)) =250
+print('TTV:',T_t_V)
 
 # 統計各地質類型的出現次數
 for i in range(np.size(geo_matrix, 1)):
@@ -70,16 +73,18 @@ for i in range(np.size(geo_matrix, 1)):
 
 # 將地質類型按照類型值排序
 soiltype_V = sorted(soiltype_V.items(), key=op.itemgetter(0), reverse=False)
+# print(soiltype_V)=[(1.0, 35), (2.0, 205), (3.0, 51), (4.0, 9)]
 
 # 初始化積分估計轉移概率矩陣和轉移矩陣
 VPCM = np.zeros([len(soiltype_V), len(soiltype_V)])
 Tmatrix_V = np.zeros([len(soiltype_V), len(soiltype_V)])
 
 # 計算積分估計轉移概率矩陣和轉移矩陣
+# print('size of geo_matrix:',np.size(geo_matrix))
+# print('len of geo_matrix[1]:',len(geo_matrix))
 for i in range(np.size(geo_matrix, 1)):
     for j in range(len(geo_matrix)):
         T_t_V[j] = geo_matrix[j][i]
-
     
     # 判斷是否轉化
     for k in range(len(T_t_V) - 1): # 49次
@@ -88,13 +93,15 @@ for i in range(np.size(geo_matrix, 1)):
                 if T_t_V[k] == soiltype_V[m][0] and T_t_V[k + 1] == soiltype_V[n][0]:
                     VPCM[m][n] += 1
                     Tmatrix_V[m][n] += 1
+print(VPCM)
+
 
 # 正規化轉移矩陣
 count_V = np.sum(Tmatrix_V, axis=1)
 for i in range(np.size(Tmatrix_V, 1)):
     for j in range(np.size(Tmatrix_V, 1)):
         Tmatrix_V[i][j] = Tmatrix_V[i][j] / count_V[i]
-print(count_V)
+print(Tmatrix_V)
 
 # 設置常數K
 K = 9.3
@@ -103,9 +110,9 @@ K = 9.3
 HPCM = np.zeros([len(count_V), len(count_V)])
 Tmatrix_H = np.zeros([len(count_V), len(count_V)])
 
-
-
 # 計算有權重的積分估計轉移概率矩陣和轉移矩陣
+print('size of Tmatrix_H:',np.size(Tmatrix_H, 1))
+
 for i in range(np.size(Tmatrix_H, 1)):
     for j in range(np.size(Tmatrix_H, 1)):
         if i == j:
@@ -114,7 +121,7 @@ for i in range(np.size(Tmatrix_H, 1)):
         else:
             HPCM[i][j] = VPCM[i][j]
             Tmatrix_H[i][j] = VPCM[i][j]
-
+print(HPCM)
 
 # 正規化轉移矩陣
 count_H = np.sum(Tmatrix_H, axis=1)
@@ -132,15 +139,18 @@ current_matrix = np.array([[0.0, 0.0, 0.0, 0.0,0.0]])
 transitionName = np.array([[1, 2, 3, 4,5]])
 
 conditions = {}
+# print('HoleLocation:',HoleLocation)=[1, 56, 92, 116, 128, 140]
 for j in range(1, len(HoleLocation)):
     conditions[(HoleLocation[j - 1], HoleLocation[j])] = HoleLocation[j]
+
+print(conditions)
 
 # 進行地質類型的預測
 for layer in range(2, D + 1):
     for i in range(1, W + 1):
-        L_state = 0
-        M_state = 0
-        Q_state = 0
+        L_state = 0  # 左側狀態
+        M_state = 0  # 上方狀態
+        Q_state = 0  # 下一個狀態
 
         # 遍歷條件範圍，找到滿足條件的範圍
         for (lower, upper), nx in conditions.items():
@@ -159,13 +169,16 @@ for layer in range(2, D + 1):
             Nx_TH = Tmatrix_H
             f_sum = 0
             k_sum = 0
+
             for N in range(1, Nx - i):
                 Nx_TH = np.dot(Nx_TH, Tmatrix_H)
+
             for f in range(typenumber):
                 f_item1 = Tmatrix_H[L_state.astype(int)][f]
                 f_item2 = Nx_TH[f][Q_state.astype(int)]
                 f_item3 = Tmatrix_V[M_state.astype(int)][f]
                 f_sum += f_item1 * f_item2 * f_item3
+
             for k in range(typenumber):
                 k_item1 = Tmatrix_H[L_state.astype(int)][k]
                 k_item2 = Nx_TH[k][Q_state.astype(int)]
@@ -173,6 +186,7 @@ for layer in range(2, D + 1):
                 k_sum = k_item1 * k_item2 * k_item3
                 current_matrix[0][k] = k_sum / f_sum
             group_number[(i - 1) + (layer - 1) * W] = np.random.choice(transitionName[0], replace=True, p=current_matrix[0])
+
 # 重塑地質類型分組數組為矩陣
 group_matrix = group_number.reshape(D, W)
 
