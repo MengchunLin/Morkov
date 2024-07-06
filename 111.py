@@ -24,7 +24,7 @@ entire_file= np.loadtxt(Matrix4D, delimiter=",",skiprows=1)
 geo_matrix = entire_file[1:,:] # skip first column
 verify_matrix=np.delete(geo_matrix,3,1)
 test_hole=geo_matrix[:,2]
-distance=entire_file[0]
+Hole_distance=entire_file[0]
 
 
 Hole = verify_matrix.shape[1]
@@ -42,15 +42,15 @@ group_number = np.zeros(A)
 # 定義各個孔洞的位置
 location=1
 HoleLocation_entire.append(location)
-for distance in distance:
+for distance in Hole_distance:
     if distance==1:
         continue
     else:
         location=int(distance/interval)
         HoleLocation_entire.append(location)
 print('孔洞位置:',HoleLocation_entire)
-HoleLocation.append(HoleLocation_entire)
 HoleLocation_verify=np.delete(HoleLocation_entire,2)
+print('驗證孔洞位置:',HoleLocation_verify[3])
 
 
 
@@ -68,7 +68,7 @@ for i in range(74, 140, 1):
 # D=50
 for i in range(1, D + 1, 1):
     for j in range(Hole):
-        group_number[(HoleLocation[j] - 1) + (i - 1) * W] = verify_matrix[i - 1][j] 
+        group_number[(HoleLocation_verify[j] - 1) + (i - 1) * W] = verify_matrix[i - 1][j] 
        
 # 初始化計算地質類型轉移概率的變量
 T_t_V = np.zeros(len(verify_matrix))
@@ -148,8 +148,8 @@ current_matrix = np.array([[0.0, 0.0, 0.0, 0.0,0.0]])
 transitionName = np.array([[1, 2, 3, 4,5]])
 
 conditions = {}
-for j in range(1, len(HoleLocation)):
-    conditions[(HoleLocation[j - 1], HoleLocation[j])] = HoleLocation[j]
+for j in range(1, len(HoleLocation_verify)):
+    conditions[(HoleLocation_verify[j - 1], HoleLocation_verify[j])] = HoleLocation_verify[j]
 
 # 進行地質類型的預測
 for layer in range(2, D + 1):
@@ -167,7 +167,7 @@ for layer in range(2, D + 1):
                 Nx = nx
                 break
 
-        if i in HoleLocation:
+        if i in HoleLocation_verify:
             a += 1
         else:
             TV = Tmatrix_V
@@ -178,14 +178,14 @@ for layer in range(2, D + 1):
             for N in range(1, Nx - i):
                 Nx_TH = np.dot(Nx_TH, Tmatrix_H)
             for f in range(typenumber):
-                f_item1 = Tmatrix_H[L_state.astype(int)][f]
-                f_item2 = Nx_TH[f][Q_state.astype(int)]
-                f_item3 = Tmatrix_V[M_state.astype(int)][f]
+                f_item1 = Tmatrix_H[int(L_state)][f]
+                f_item2 = Nx_TH[f][int(Q_state)]
+                f_item3 = Tmatrix_V[int(M_state)][f]
                 f_sum += f_item1 * f_item2 * f_item3
             for k in range(typenumber):
-                k_item1 = Tmatrix_H[L_state.astype(int)][k]
-                k_item2 = Nx_TH[k][Q_state.astype(int)]
-                k_item3 = Tmatrix_V[M_state.astype(int)][k]
+                k_item1 = Tmatrix_H[int(L_state)][k]
+                k_item2 = Nx_TH[k][int(Q_state)]
+                k_item3 = Tmatrix_V[int(M_state)][k]
                 k_sum = k_item1 * k_item2 * k_item3
                 current_matrix[0][k] = k_sum / f_sum
             group_number[(i - 1) + (layer - 1) * W] = np.random.choice(transitionName[0], replace=True, p=current_matrix[0])
@@ -200,7 +200,7 @@ for i,x in zip(test_hole,verify_array):
     else:
         denominator+=1
 correct_rate=molecular/denominator
-print('正確率:',correct_rate)
+print('正確率:',correct_rate*100,"%")
 
 
 # 可視化地質類型分布
