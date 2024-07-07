@@ -13,7 +13,7 @@ molecular=0
 HoleLocation_entire=[]
 HoleLocation_verify=[]
 HoleLocation=[]
-
+verify_hole_index=3
 
 # 定義模型的間隔、寬度、深度、面積、孔洞數量和地質類型數量等參數
 interval = 0.5
@@ -22,8 +22,8 @@ D = int(25/interval) # 50
 A = W * D
 entire_file= np.loadtxt(Matrix4D, delimiter=",",skiprows=1) 
 geo_matrix = entire_file[1:,:] # skip first column
-verify_matrix=np.delete(geo_matrix,3,1)
-test_hole=geo_matrix[:,2]
+verify_matrix=np.delete(geo_matrix,2,1)
+test_hole=geo_matrix[:,verify_hole_index]
 Hole_distance=entire_file[0]
 
 
@@ -82,7 +82,6 @@ for i in range(np.size(verify_matrix, 1)):
         T_t_V[j] = verify_matrix[j][i]
     for k in T_t_V[0:len(T_t_V)]:
         soiltype_V[k] = soiltype_V.get(k, 0) + 1
-# 50個數字
 
 # 將地質類型按照類型值排序
 soiltype_V = sorted(soiltype_V.items(), key=op.itemgetter(0), reverse=False)
@@ -92,6 +91,7 @@ VPCM = np.zeros([len(soiltype_V), len(soiltype_V)])
 Tmatrix_V = np.zeros([len(soiltype_V), len(soiltype_V)])
 
 # 計算積分估計轉移概率矩陣和轉移矩陣
+
 for i in range(np.size(verify_matrix, 1)):
     for j in range(len(verify_matrix)):
         T_t_V[j] = verify_matrix[j][i]
@@ -110,7 +110,6 @@ count_V = np.sum(Tmatrix_V, axis=1)
 for i in range(np.size(Tmatrix_V, 1)):
     for j in range(np.size(Tmatrix_V, 1)):
         Tmatrix_V[i][j] = Tmatrix_V[i][j] / count_V[i]
-print(count_V)
 
 # 設置常數K
 K = 9.3
@@ -191,7 +190,7 @@ for layer in range(2, D + 1):
             group_number[(i - 1) + (layer - 1) * W] = np.random.choice(transitionName[0], replace=True, p=current_matrix[0])
 # 重塑地質類型分組數組為矩陣
 group_matrix = group_number.reshape(D, W)
-verify_array=group_matrix[:,91]
+verify_array=group_matrix[:,HoleLocation_verify[verify_hole_index]]
 print(verify_array)
 for i,x in zip(test_hole,verify_array):
     if i==x:
@@ -206,7 +205,7 @@ print('正確率:',correct_rate*100,"%")
 # 可視化地質類型分布
 plt.imshow(group_matrix, cmap='tab10', origin='upper')
 plt.colorbar(label='Geological Type')
-plt.title('Geological Type Prediction')
+plt.title('test hole pic')
 plt.xlabel('Width (units)')
 plt.ylabel('Depth ')
 plt.show() 
