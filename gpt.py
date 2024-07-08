@@ -1,10 +1,13 @@
 import numpy as np
 import operator as op
 import matplotlib.pyplot as plt
+import pandas as pd
+import re
 
 Matrix4D = "test.csv"
 Matrix5D = '5DMatrix.csv'
 sixHole = '6Hole.csv'
+irregular_matrix='test - 複製.csv'
 denominator = 0
 molecular = 0
 HoleLocation_entire = []
@@ -14,20 +17,30 @@ verify_matrix =np.array([])
 
 # 定義模型的間隔、寬度、深度、面積、孔洞數量和地質類型數量等參數
 interval = 0.5
-W = int(70 / interval)  # 140
-D = int(25 / interval)  # 50
-A = W * D
-entire_file = np.loadtxt(Matrix4D, delimiter=",", skiprows=1)
-entiry_matrix = entire_file[1:, :]  # skip first column
-verify_matrix = np.delete(entiry_matrix, verify_hole_index, 1)
-test_hole = entiry_matrix[:, verify_hole_index]
-Hole_distance = entire_file[0]
 
+entire_file = pd.read_csv(irregular_matrix, delimiter=",",header=None)
+entire_file = np.array(entire_file)
+entiry_matrix = entire_file[2:, :]  # skip first column
+Hole_distance = entire_file[1]
+width=max(entire_file[1])
+depth=(len(entiry_matrix))
+
+W = int(width / interval)  
+D = int(depth / interval)  
+A = W * D
+print('W:',W,'D:',D,'A:',A)
 
 # 獲取不同數字的數量
 unique_numbers = np.unique(entiry_matrix)
 typenumber = len(unique_numbers)
 print('共有', typenumber, '種土壤材質')
+
+# current_matrix=
+transitionName=(set(entiry_matrix.flatten()))
+transitionName.remove(0)
+current_matrix=np.zeros((1,len(transitionName)))
+
+
 
 # 初始化地質類型的分組數組
 
@@ -36,8 +49,6 @@ HoleLocation_entire=Hole_distance/interval
 HoleLocation_entire=HoleLocation_entire.astype(int)
 HoleLocation_entire[0]=1
 print('孔洞位置:', HoleLocation_entire)
-HoleLocation_verify = np.delete(HoleLocation_entire, verify_hole_index)
-print('驗證孔洞位置:', HoleLocation_verify)
 
 
 
@@ -50,10 +61,14 @@ def calculate_transition_matrix(matrix,hole_location):
         group_number[i - 1] = 1
     for i in range(74, 140, 1):
         group_number[i - 1] = 2
+    print(len(hole_location))
 
-    for i in range(1, D + 1, 1):
-        for j in range(len(hole_location)):
-            group_number[(hole_location[j] - 1) + (i - 1) * W] = matrix[i - 1][j]
+    for j in range(0, depth  , 1):
+        print('j:',j)
+        for i in range(len(hole_location)):
+            position=hole_location[i] + j * W - 1
+            group_number[ position ] = matrix[j][i]
+            print(j,i , matrix[j][i])
 
             
     T_t_V = np.zeros(len(matrix))
@@ -108,8 +123,7 @@ def calculate_transition_matrix(matrix,hole_location):
 
 # 計算 HoleLocation_entire 的轉移矩陣
 Tmatrix_V_entire, Tmatrix_H_entire ,group_number_entire= calculate_transition_matrix(entiry_matrix,HoleLocation_entire)
-# 計算 HoleLocation_verify 的轉移矩陣
-Tmatrix_V_verify, Tmatrix_H_verify,group_number_verify = calculate_transition_matrix(verify_matrix,HoleLocation_verify)
+
 
 # 預測地質類型的函數
 def predict_geological_types(Tmatrix_V, Tmatrix_H, HoleLocation,group_number):
@@ -118,8 +132,8 @@ def predict_geological_types(Tmatrix_V, Tmatrix_H, HoleLocation,group_number):
     Q_state = 0
     Nx = 0
     a = 0
-    current_matrix = np.array([[0.0, 0.0, 0.0, 0.0, 0.0]])
-    transitionName = np.array([[1, 2, 3, 4, 5]])
+    # current_matrix = np.array([[0.0, 0.0, 0.0, 0.0, 0.0]])
+    # transitionName = np.array([[1, 2, 3, 4, 5]])
 
     conditions = {}
     for j in range(1, len(HoleLocation)):
@@ -138,6 +152,7 @@ def predict_geological_types(Tmatrix_V, Tmatrix_H, HoleLocation,group_number):
                     Q_state = group_number[(nx - 1) + (layer - 1) * W] - 1
                     Nx = nx
                     break
+            print('L_state:',L_state)
 
             if i in HoleLocation:
                 a += 1
@@ -170,22 +185,10 @@ def predict_geological_types(Tmatrix_V, Tmatrix_H, HoleLocation,group_number):
 
 # 預測並計算 HoleLocation_entire 的地質類型
 predict_result_entire = predict_geological_types(Tmatrix_V_entire, Tmatrix_H_entire, HoleLocation_entire,group_number_entire)
-# 預測並計算 HoleLocation_verify 的地質類型
-predict_result_verify = predict_geological_types(Tmatrix_V_verify, Tmatrix_H_verify, HoleLocation_verify,group_number_verify)
+
 
 # 重塑地質類型分組數組為矩陣
 predict_result_entire = predict_result_entire.reshape(D, W)
-predict_result_verify = predict_result_verify.reshape(D, W)
-print('預測鑽孔編號:',verify_hole_index,  HoleLocation_verify[verify_hole_index])
-verify_array = predict_result_verify[:, HoleLocation_entire[verify_hole_index]]
-for i, x in zip(test_hole, verify_array):
-    if i == x:
-        denominator += 1
-        molecular += 1
-    else:
-        denominator += 1
-correct_rate = molecular / denominator
-print('正確率:', correct_rate * 100, "%")
 
 # 可視化地質類型分布
 plt.imshow(predict_result_entire, cmap='tab10', origin='upper')
@@ -195,10 +198,3 @@ plt.xlabel('Width (units)')
 plt.ylabel('Depth (units)')
 plt.savefig('geological_type_prediction_entiry.png')
 plt.clf()
-
-plt.imshow(predict_result_verify, cmap='tab10', origin='upper')
-plt.colorbar(label='Geological Type')
-plt.title('test hole pic')
-plt.xlabel('Width (units)')
-plt.ylabel('Depth (units)')
-plt.savefig('geological_type_prediction_verify.png')
