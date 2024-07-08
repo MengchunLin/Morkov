@@ -13,17 +13,18 @@ interval = 0.5
 W = int(70/interval) # 140
 D = int(25/interval) # 50
 A = W * D
-geo_matrix = np.loadtxt(sixHole, delimiter=",", skiprows=1) # saperate by ',' , skip first row
+geo_matrix = np.loadtxt(Matrix4D, delimiter=",", skiprows=1) # saperate by ',' , skip first row
 
 
 
 Hole = geo_matrix.shape[1]
 print('共有',Hole,'個孔')
 
-
+geo_matrix=geo_matrix[1:, :] 
 # 獲取不同數字的數量
 unique_numbers = np.unique(geo_matrix)
 typenumber = len(unique_numbers)
+print(unique_numbers)
 print('共有',typenumber,'種土讓材質')
 # 初始化地質類型的分組數組
 group_number = np.zeros(A)
@@ -35,10 +36,9 @@ Hole1 = 1
 Hole2 = int(28 /interval) # 28/0.5  
 Hole3 = int(46 /interval)
 Hole4 = int(58 /interval)
-Hole5 = int(64 /interval) 
-Hole6 = int(70 /interval)    
+Hole5 = int(70 /interval) 
 
-HoleLocation=[Hole1,Hole2,Hole3,Hole4,Hole5,Hole6]
+HoleLocation=[Hole1,Hole2,Hole3,Hole4,Hole5]
 # 將地質數據中的類型分組存儲到group_number數組中
 # Horizontal has two type of soil at the  first layer
 # First matrix?
@@ -53,7 +53,8 @@ for i in range(74, 140, 1):
 for i in range(1, D + 1, 1):
     for j in range(Hole):
         group_number[(HoleLocation[j] - 1) + (i - 1) * W] = geo_matrix[i - 1][j] 
-       
+print('group_number_entire:\n',group_number[0:20])
+
 # 初始化計算地質類型轉移概率的變量
 T_t_V = np.zeros(len(geo_matrix))
 soiltype_V = {}
@@ -121,7 +122,9 @@ count_H = np.sum(Tmatrix_H, axis=1)
 for i in range(np.size(Tmatrix_H, 1)):
     for j in range(np.size(Tmatrix_H, 1)):
         Tmatrix_H[i][j] = Tmatrix_H[i][j] / count_H[i]
-
+file=open('log.txt','w')
+print('Tmatrix_V_entire:\n',Tmatrix_V,file=file)
+print('Tmatrix_H_entire:\n',Tmatrix_H,file=file)
 # 初始化地質類型預測的相關變數
 L_state = 0
 M_state = 0
@@ -150,6 +153,7 @@ for layer in range(2, D + 1):
                 Q_state = group_number[(nx - 1) + (layer - 1) * W] - 1
                 Nx = nx
                 break
+        print("Nx:",Nx,"L_state:",L_state,"M_state:",M_state,"Q_state:",Q_state,file=file)
 
         if i in HoleLocation:
             a += 1
@@ -159,13 +163,20 @@ for layer in range(2, D + 1):
             Nx_TH = Tmatrix_H
             f_sum = 0
             k_sum = 0
+            f_item1 = 0
+            f_item2 = 0
+            f_item3 = 0
             for N in range(1, Nx - i):
                 Nx_TH = np.dot(Nx_TH, Tmatrix_H)
+            # print("Nx_TH\n",Nx_TH,file=file)
+
             for f in range(typenumber):
                 f_item1 = Tmatrix_H[L_state.astype(int)][f]
                 f_item2 = Nx_TH[f][Q_state.astype(int)]
                 f_item3 = Tmatrix_V[M_state.astype(int)][f]
                 f_sum += f_item1 * f_item2 * f_item3
+            print('f_item1:',f_item1,'f_item2:',f_item2,'f_item3:',f_item3,file=file)
+
             for k in range(typenumber):
                 k_item1 = Tmatrix_H[L_state.astype(int)][k]
                 k_item2 = Nx_TH[k][Q_state.astype(int)]
@@ -182,4 +193,5 @@ plt.colorbar(label='Geological Type')
 plt.title('Geological Type Prediction')
 plt.xlabel('Width (units)')
 plt.ylabel('Depth ')
+plt.savefig('GT.png')
 plt.show() 
