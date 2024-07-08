@@ -32,7 +32,7 @@ group_number = np.zeros(A)
 
 # 定義各個孔洞的位置
 # 0.5 per unit
-Hole1 = 1    
+Hole1 = 0    
 Hole2 = int(28 /interval) # 28/0.5  
 Hole3 = int(46 /interval)
 Hole4 = int(58 /interval)
@@ -53,7 +53,6 @@ for i in range(74, 140, 1):
 for i in range(1, D + 1, 1):
     for j in range(Hole):
         group_number[(HoleLocation[j] - 1) + (i - 1) * W] = geo_matrix[i - 1][j] 
-print('group_number_entire:\n',group_number[0:20])
 
 # 初始化計算地質類型轉移概率的變量
 T_t_V = np.zeros(len(geo_matrix))
@@ -141,6 +140,9 @@ for j in range(1, len(HoleLocation)):
 # 進行地質類型的預測
 for layer in range(2, D + 1):
     for i in range(1, W + 1):
+        if i in HoleLocation:
+            a += 1
+            continue
         L_state = 0
         M_state = 0
         Q_state = 0
@@ -155,35 +157,34 @@ for layer in range(2, D + 1):
                 break
         print("Nx:",Nx,"L_state:",L_state,"M_state:",M_state,"Q_state:",Q_state,file=file)
 
-        if i in HoleLocation:
-            a += 1
-        else:
-            TV = Tmatrix_V
-            TH = Tmatrix_H
-            Nx_TH = Tmatrix_H
-            f_sum = 0
-            k_sum = 0
-            f_item1 = 0
-            f_item2 = 0
-            f_item3 = 0
-            for N in range(1, Nx - i):
-                Nx_TH = np.dot(Nx_TH, Tmatrix_H)
-            # print("Nx_TH\n",Nx_TH,file=file)
+     
+  
+        TV = Tmatrix_V
+        TH = Tmatrix_H
+        Nx_TH = Tmatrix_H
+        f_sum = 0
+        k_sum = 0
+        f_item1 = 0
+        f_item2 = 0
+        f_item3 = 0
+        for N in range(1, Nx - i):
+            Nx_TH = np.dot(Nx_TH, Tmatrix_H)
+        # print("Nx_TH\n",Nx_TH,file=file)
 
-            for f in range(typenumber):
-                f_item1 = Tmatrix_H[L_state.astype(int)][f]
-                f_item2 = Nx_TH[f][Q_state.astype(int)]
-                f_item3 = Tmatrix_V[M_state.astype(int)][f]
-                f_sum += f_item1 * f_item2 * f_item3
-            print('f_item1:',f_item1,'f_item2:',f_item2,'f_item3:',f_item3,file=file)
+        for f in range(typenumber):
+            f_item1 = Tmatrix_H[L_state.astype(int)][f]
+            f_item2 = Nx_TH[f][Q_state.astype(int)]
+            f_item3 = Tmatrix_V[M_state.astype(int)][f]
+            f_sum += f_item1 * f_item2 * f_item3
+        print('f_item1:',f_item1,'f_item2:',f_item2,'f_item3:',f_item3,file=file)
 
-            for k in range(typenumber):
-                k_item1 = Tmatrix_H[L_state.astype(int)][k]
-                k_item2 = Nx_TH[k][Q_state.astype(int)]
-                k_item3 = Tmatrix_V[M_state.astype(int)][k]
-                k_sum = k_item1 * k_item2 * k_item3
-                current_matrix[0][k] = k_sum / f_sum
-            group_number[(i - 1) + (layer - 1) * W] = np.random.choice(transitionName[0], replace=True, p=current_matrix[0])
+        for k in range(typenumber):
+            k_item1 = Tmatrix_H[L_state.astype(int)][k]
+            k_item2 = Nx_TH[k][Q_state.astype(int)]
+            k_item3 = Tmatrix_V[M_state.astype(int)][k]
+            k_sum = k_item1 * k_item2 * k_item3
+            current_matrix[0][k] = k_sum / f_sum
+        group_number[(i - 1) + (layer - 1) * W] = np.random.choice(transitionName[0], replace=True, p=current_matrix[0])
 # 重塑地質類型分組數組為矩陣
 group_matrix = group_number.reshape(D, W)
 

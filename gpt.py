@@ -22,7 +22,7 @@ print('最大位置',Hole_distance.max())
 print('最深資料(個):', entiry_matrix.shape[0])
 # 定義模型的間隔、寬度、深度、面積、孔洞數量和地質類型數量等參數
 interval = 0.5
-W = int(Hole_distance.max() / interval)  
+W = int(Hole_distance.max() / interval)  +1
 D = int(entiry_matrix.shape[0])  
 # D = 50
 
@@ -41,22 +41,20 @@ entiry_matrix = [[mapping[value] for value in row] for row in entiry_matrix]
 # 定義各個孔洞的位置
 HoleLocation_entire=Hole_distance/interval
 HoleLocation_entire=HoleLocation_entire.astype(int)
-HoleLocation_entire[0]=1
 print('孔洞位置:', HoleLocation_entire)
-
 
 # 計算轉移概率矩陣的函數
 def calculate_transition_matrix(matrix,hole_location):
-    group_number = np.zeros(A)
+    group_number = np.zeros((D , W))
     # # 將地質數據中的類型分組存儲到 group_number 數組中
     for i in range(140):
         if i < 74:
-            group_number[i] = 1
+            group_number[0][i] = 1
         else:
-            group_number[i] = 2
-    for i in range( D):
+            group_number[0][i] = 2
+    for i in range(D):
         for j in range(len(hole_location)):
-            group_number[(hole_location[j] - 1) + i  * W] = matrix[i][j]
+            group_number[i][(hole_location[j])] = matrix[i][j]
 
             
     T_t_V = np.zeros(len(matrix))
@@ -110,7 +108,6 @@ def calculate_transition_matrix(matrix,hole_location):
 
 # 計算 HoleLocation_entire 的轉移矩陣
 Tmatrix_V_entire, Tmatrix_H_entire ,group_number_entire= calculate_transition_matrix(entiry_matrix,HoleLocation_entire)
-print('group_number_entire:\n',group_number_entire[0:20])
 # 計算 HoleLocation_verify 的轉移矩陣
 # Tmatrix_V_verify, Tmatrix_H_verify,group_number_verify = calculate_transition_matrix(verify_matrix,HoleLocation_verify)
 file=open('mylog.txt','w')
@@ -128,50 +125,55 @@ def predict_geological_types(Tmatrix_V, Tmatrix_H, HoleLocation,group_number):
     conditions = {}
     for j in range(1, len(HoleLocation)):
         conditions[(HoleLocation[j - 1], HoleLocation[j])] = HoleLocation[j]
-
-    for layer in range(2, D + 1):
-        for i in range(1, W + 1):
+    for layer in range(1,D):
+        for i in range(W):
+            if i in (HoleLocation):
+                a += 1
+                continue
             L_state = 0
             M_state = 0
             Q_state = 0
-
+            
             for (lower, upper), nx in conditions.items():
                 if lower < i < upper:
-                    L_state = group_number[(i - 2) + (layer - 1) * W] - 1
-                    M_state = group_number[(i - 1) + (layer - 2) * W] - 1
-                    Q_state = group_number[(nx - 1) + (layer - 1) * W] - 1
+                    # L_state = group_number[(i - 2) + (layer - 1) * W] - 1
+                    # M_state = group_number[(i - 1) + (layer - 2) * W] - 1
+                    # Q_state = group_number[(nx - 1) + (layer - 1) * W] - 1
+                    L_state = group_number[layer][i-1] - 1
+                    M_state = group_number[layer-1][i] - 1
+                    Q_state = group_number[layer][nx] - 1
                     Nx = nx
                     break
             print("Nx:",Nx,"L_state:",L_state,"M_state:",M_state,"Q_state:",Q_state,file=file)
-            if i in HoleLocation:
-                a += 1
-            else:
-                Nx_TH = Tmatrix_H
-                f_sum = 0
-                k_sum = 0
-                f_item1 = 0
-                f_item2 = 0
-                f_item3 = 0
-                for _ in range(1, Nx - i):
-                    Nx_TH = np.dot(Nx_TH, Tmatrix_H)
-                # print("Nx_TH\n",Nx_TH, file=file)
+            
+            
+            Nx_TH = Tmatrix_H
+            f_sum = 0
+            k_sum = 0
+            f_item1 = 0
+            f_item2 = 0
+            f_item3 = 0
+            for _ in range(1, Nx - i):
+                Nx_TH = np.dot(Nx_TH, Tmatrix_H)
+            # print("Nx_TH\n",Nx_TH, file=file)
 
-                for f in range(typenumber):
-                    f_item1 = Tmatrix_H[int(L_state)][f]
-                    f_item2 = Nx_TH[f][int(Q_state)]
-                    f_item3 = Tmatrix_V[int(M_state)][f]
-                    f_sum += f_item1 * f_item2 * f_item3
-                print('f_item1:',f_item1,'f_item2:',f_item2,'f_item3:',f_item3,file=file)
+            for f in range(typenumber):
+                f_item1 = Tmatrix_H[int(L_state)][f]
+                f_item2 = Nx_TH[f][int(Q_state)]
+                f_item3 = Tmatrix_V[int(M_state)][f]
+                f_sum += f_item1 * f_item2 * f_item3
+            print('f_item1:',f_item1,'f_item2:',f_item2,'f_item3:',f_item3,file=file)
 
-                for k in range(typenumber):
-                    k_item1 = Tmatrix_H[int(L_state)][k]
-                    k_item2 = Nx_TH[k][int(Q_state)]
-                    k_item3 = Tmatrix_V[int(M_state)][k]
-                    k_sum = k_item1 * k_item2 * k_item3
-                   
-                    current_matrix[0][k] = k_sum / f_sum
-                # print('layer:',layer)
-                group_number[(i - 1) + (layer - 1) * W] = np.random.choice(transitionName[0], replace=True, p=current_matrix[0])
+            for k in range(typenumber):
+                k_item1 = Tmatrix_H[int(L_state)][k]
+                k_item2 = Nx_TH[k][int(Q_state)]
+                k_item3 = Tmatrix_V[int(M_state)][k]
+                k_sum = k_item1 * k_item2 * k_item3
+                
+                current_matrix[0][k] = k_sum / f_sum
+            # print('layer:',layer)
+            # 進行預測
+            group_number[layer][i] = np.random.choice(transitionName[0], replace=True, p=current_matrix[0])
 
     return group_number
 
@@ -179,7 +181,6 @@ def predict_geological_types(Tmatrix_V, Tmatrix_H, HoleLocation,group_number):
 predict_result_entire = predict_geological_types(Tmatrix_V_entire, Tmatrix_H_entire, HoleLocation_entire,group_number_entire)
 
 # 重塑地質類型分組數組為矩陣
-predict_result_entire = predict_result_entire.reshape(D, W)
 
 # 可視化地質類型分布
 plt.imshow(predict_result_entire, cmap='tab10', origin='upper')
