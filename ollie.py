@@ -1,16 +1,22 @@
 import numpy as np
 
-# 原始陣列
-array = np.array([0, 112, 202, 242, 264, 303, 307, 424,1,2])
+# 創建一個二維的NumPy矩陣
+matrix = np.array([
+    [1, 2, 3],
+    [2, 3, 1],
+    [1, 2, 1]
+])
 
-# 將陣列排序
-sorted_indices = np.argsort(array)
-print("排序後的索引：", sorted_indices)
-sorted_array = array[sorted_indices]
+# 使用一個字典來統計出現次數
+count_map = {}
 
-# 為排序後的陣列分配編號
-sorted_with_indices = [(i, val) for i, val in enumerate(sorted_array)]
+# 迭代矩陣中的每個元素
+for row in matrix:
+    for item in row:
+        if item in count_map:
+            count_map[item] += 1
+        else:
+            count_map[item] = 1
 
-print("排序後的陣列和編號：")
-for idx, val in sorted_with_indices:
-    print(f"編號: {idx + 1}, 值: {val}")
+print("每個元素的出現次數:")
+print(count_map)
