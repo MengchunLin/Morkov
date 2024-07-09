@@ -1,19 +1,19 @@
 import numpy as np
 import operator as op
 import matplotlib.pyplot as plt
-import difflib
 
 Matrix4D="test.csv"
 Matrix5D='5DMatrix.csv'
 
 sixHole='6Hole.csv'
-
+test_file='test - 複製.csv'
+eightSoil='8soil.csv'
 # 定義模型的間隔、寬度、深度、面積、孔洞數量和地質類型數量等參數
 interval = 0.5
 W = int(70/interval) # 140
 D = int(25/interval) # 50
 A = W * D
-geo_matrix = np.loadtxt(Matrix4D, delimiter=",", skiprows=1) # saperate by ',' , skip first row
+geo_matrix = np.loadtxt(eightSoil, delimiter=",", skiprows=1) # saperate by ',' , skip first row
 
 
 
@@ -130,8 +130,8 @@ M_state = 0
 Q_state = 0
 Nx = 0
 a = 0
-current_matrix = np.array([[0.0, 0.0, 0.0, 0.0,0.0]])
-transitionName = np.array([[1, 2, 3, 4,5]])
+current_matrix = np.array([[0.0, 0.0, 0.0, 0.0,0.0,0.0,0.0,0.0]])
+transitionName = np.array([[1, 2, 3, 4,5,6,7,8]])
 
 conditions = {}
 for j in range(1, len(HoleLocation)):
@@ -176,14 +176,17 @@ for layer in range(2, D + 1):
             f_item2 = Nx_TH[f][Q_state.astype(int)]
             f_item3 = Tmatrix_V[M_state.astype(int)][f]
             f_sum += f_item1 * f_item2 * f_item3
-        print('f_item1:',f_item1,'f_item2:',f_item2,'f_item3:',f_item3,file=file)
+        print('f_sum:',f_sum,file=file)
 
-        for k in range(typenumber):
-            k_item1 = Tmatrix_H[L_state.astype(int)][k]
-            k_item2 = Nx_TH[k][Q_state.astype(int)]
-            k_item3 = Tmatrix_V[M_state.astype(int)][k]
-            k_sum = k_item1 * k_item2 * k_item3
-            current_matrix[0][k] = k_sum / f_sum
+        if f_sum == 0:
+            current_matrix[0] = np.ones(typenumber) / typenumber
+        else:
+            for k in range(typenumber):
+                k_item1 = Tmatrix_H[L_state.astype(int)][k]
+                k_item2 = Nx_TH[k][Q_state.astype(int)]
+                k_item3 = Tmatrix_V[M_state.astype(int)][k]
+                k_sum = k_item1 * k_item2 * k_item3
+                current_matrix[0][k] = k_sum / f_sum
         group_number[(i - 1) + (layer - 1) * W] = np.random.choice(transitionName[0], replace=True, p=current_matrix[0])
 # 重塑地質類型分組數組為矩陣
 group_matrix = group_number.reshape(D, W)
@@ -191,6 +194,9 @@ group_matrix = group_number.reshape(D, W)
 # 可視化地質類型分布
 plt.imshow(group_matrix, cmap='tab10', origin='upper')
 plt.colorbar(label='Geological Type')
+# cbar = plt.colorbar()
+# cbar.set_ticks([1,2,3,4,5,6,7,8])  # 設置顏色條刻度
+# cbar.set_ticklabels(['1', '2', '3', '4', '5', '6', '7','8'])  # 設置顏色條標籤
 plt.title('Geological Type Prediction')
 plt.xlabel('Width (units)')
 plt.ylabel('Depth ')

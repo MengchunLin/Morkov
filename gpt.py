@@ -2,52 +2,61 @@ import numpy as np
 import pandas as pd
 import operator as op
 import matplotlib.pyplot as plt
-
+# -----------testing file----------------
 Matrix4D = "test.csv"
 Matrix5D = '5DMatrix.csv'
 sixHole = '6Hole.csv'
-# test_file='test - 複製.csv'
-test_file='test.csv'
+test='test - 複製.csv'
+eightSoil='8soil.csv'
+# -----------testing file----------------
+# file preprocessing
+entire_file = pd.read_csv(eightSoil, delimiter=",").fillna(0).values # 讀取文件空值全部補0
+entiry_matrix = entire_file[1:, :]  # skip first column 第一行是位置
+Hole_distance = entire_file[0]
+# 取得土壤種類
+unique_numbers = np.unique(entiry_matrix)
+# 從unique_numbers過濾掉0
+unique_numbers = unique_numbers[unique_numbers != 0]
+typenumber = len(unique_numbers)
+
+
+# 建立土壤代號對應的數字
+mapping = {value: index+1 for index, value in enumerate(unique_numbers)}
+# 將公司土壤代號轉換為 1 ~ ...
+entiry_matrix =  np.array([[mapping[value] if not value==0 else np.nan for value in row] for row in entiry_matrix])
+transitionName = np.arange(1,typenumber+1)
+# file preprocessing
+
+
+# 定義模型的間隔、寬度、深度、面積、孔洞數量和地質類型數量等參數
+interval = 0.5
+W = int(Hole_distance.max() / interval) + 1
+D = int(entiry_matrix.shape[0] ) 
 
 denominator = 0
 molecular = 0
-HoleLocation_entire = []
-HoleLocation_verify = []
-
-
-entire_file = pd.read_csv(Matrix4D, delimiter=",").values
-entiry_matrix = entire_file[1:, :]  # skip first column 第一行是位子
-Hole_distance = entire_file[0]
-print('最大位置',Hole_distance.max())
-print('最深資料(個):', entiry_matrix.shape[0])
-# 定義模型的間隔、寬度、深度、面積、孔洞數量和地質類型數量等參數
-interval = 0.5
-W = int(Hole_distance.max() / interval)  +1
-D = int(entiry_matrix.shape[0])  
-# D = 50
-
 A = W * D
-print('寬度', W)
-print('深度', D)
-# 獲取不同數字的數量
-unique_numbers = np.unique(entiry_matrix)
-typenumber = len(unique_numbers)
-print(unique_numbers)
-print('共有', typenumber, '種土壤材質')
+# 空資料填充0
 
-# 轉換公司土壤代號為0~...
-mapping = {value: index+1 for index, value in enumerate(unique_numbers)}
-entiry_matrix = [[mapping[value] for value in row] for row in entiry_matrix]
+entiry_matrix[np.isnan(entiry_matrix)] = 0
+HoleLocation_entire=(Hole_distance/interval).astype(int)
+
+print('最大位置',Hole_distance.max())
+print('最深資料(個):', D)
+print('寬度', W,'深度', D)
+print('共有', typenumber, '種土壤材質')
+print("土壤代號",unique_numbers,entiry_matrix[0])
+
+print('mapping:', mapping)
 # 定義各個孔洞的位置
-HoleLocation_entire=Hole_distance/interval
-HoleLocation_entire=HoleLocation_entire.astype(int)
-print('孔洞位置:', HoleLocation_entire)
+print('孔洞完整位置:', HoleLocation_entire)
 
 # 計算轉移概率矩陣的函數
 def calculate_transition_matrix(matrix,hole_location):
     group_number = np.zeros((D , W))
     # # 將地質數據中的類型分組存儲到 group_number 數組中
-    for i in range(140):
+    #   TODO
+    for i in range(W):
         if i < 74:
             group_number[0][i] = 1
         else:
@@ -56,7 +65,6 @@ def calculate_transition_matrix(matrix,hole_location):
         for j in range(len(hole_location)):
             group_number[i][(hole_location[j])] = matrix[i][j]
 
-            
     T_t_V = np.zeros(len(matrix))
     soiltype_V = {}
 
@@ -108,87 +116,80 @@ def calculate_transition_matrix(matrix,hole_location):
 
 # 計算 HoleLocation_entire 的轉移矩陣
 Tmatrix_V_entire, Tmatrix_H_entire ,group_number_entire= calculate_transition_matrix(entiry_matrix,HoleLocation_entire)
-# 計算 HoleLocation_verify 的轉移矩陣
-# Tmatrix_V_verify, Tmatrix_H_verify,group_number_verify = calculate_transition_matrix(verify_matrix,HoleLocation_verify)
-file=open('mylog.txt','w')
-print('Tmatrix_V_entire:\n',Tmatrix_V_entire,file=file)
-print('Tmatrix_H_entire:\n',Tmatrix_H_entire,file=file)
+
 # 預測地質類型的函數
 def predict_geological_types(Tmatrix_V, Tmatrix_H, HoleLocation,group_number):
     L_state = 0
     M_state = 0
     Q_state = 0
     Nx = 0
-    a = 0
-    current_matrix = np.array([[0.0, 0.0, 0.0, 0.0,0.0]])
-    transitionName = np.array([[1, 2, 3, 4,5]])
+    current_matrix = np.zeros(len(transitionName))
+
     conditions = {}
     for j in range(1, len(HoleLocation)):
         conditions[(HoleLocation[j - 1], HoleLocation[j])] = HoleLocation[j]
     for layer in range(1,D):
         for i in range(W):
-            if i in (HoleLocation):
-                a += 1
+            # 若為鑽孔位置並且是有資料的就跳過
+            if i in (HoleLocation) and i != 0:
                 continue
             L_state = 0
             M_state = 0
             Q_state = 0
-            
             for (lower, upper), nx in conditions.items():
                 if lower < i < upper:
-                    # L_state = group_number[(i - 2) + (layer - 1) * W] - 1
-                    # M_state = group_number[(i - 1) + (layer - 2) * W] - 1
-                    # Q_state = group_number[(nx - 1) + (layer - 1) * W] - 1
                     L_state = group_number[layer][i-1] - 1
                     M_state = group_number[layer-1][i] - 1
                     Q_state = group_number[layer][nx] - 1
                     Nx = nx
                     break
-            print("Nx:",Nx,"L_state:",L_state,"M_state:",M_state,"Q_state:",Q_state,file=file)
-            
             
             Nx_TH = Tmatrix_H
             f_sum = 0
             k_sum = 0
-            f_item1 = 0
-            f_item2 = 0
-            f_item3 = 0
             for _ in range(1, Nx - i):
                 Nx_TH = np.dot(Nx_TH, Tmatrix_H)
-            # print("Nx_TH\n",Nx_TH, file=file)
-
             for f in range(typenumber):
                 f_item1 = Tmatrix_H[int(L_state)][f]
                 f_item2 = Nx_TH[f][int(Q_state)]
                 f_item3 = Tmatrix_V[int(M_state)][f]
                 f_sum += f_item1 * f_item2 * f_item3
-            print('f_item1:',f_item1,'f_item2:',f_item2,'f_item3:',f_item3,file=file)
-
-            for k in range(typenumber):
-                k_item1 = Tmatrix_H[int(L_state)][k]
-                k_item2 = Nx_TH[k][int(Q_state)]
-                k_item3 = Tmatrix_V[int(M_state)][k]
-                k_sum = k_item1 * k_item2 * k_item3
-                
-                current_matrix[0][k] = k_sum / f_sum
-            # print('layer:',layer)
+            if f_sum == 0:
+                current_matrix= np.ones(typenumber) / typenumber
+            else:
+                for k in range(typenumber):
+                    k_item1 = Tmatrix_H[int(L_state)][k]
+                    k_item2 = Nx_TH[k][int(Q_state)]
+                    k_item3 = Tmatrix_V[int(M_state)][k]
+                    k_sum = k_item1 * k_item2 * k_item3
+                    current_matrix[k] = k_sum / f_sum
             # 進行預測
-            group_number[layer][i] = np.random.choice(transitionName[0], replace=True, p=current_matrix[0])
-
+            group_number[layer][i] = np.random.choice(transitionName, replace=True, p=current_matrix)
     return group_number
 
 
 predict_result_entire = predict_geological_types(Tmatrix_V_entire, Tmatrix_H_entire, HoleLocation_entire,group_number_entire)
 
-# 重塑地質類型分組數組為矩陣
+
 
 # 可視化地質類型分布
 plt.imshow(predict_result_entire, cmap='tab10', origin='upper')
-plt.colorbar(label='Geological Type')
-plt.title('entiry hole pic')
+# plt.colorbar(label='Geological Type')
+cbar = plt.colorbar()
+# 獲取mapping所有key
+mapping_key = list(mapping.keys())
+mapping_value = list(mapping.values())
+
+print('mapping_key:',mapping_key)
+print('mapping_value:',mapping_value)
+
+cbar.set_ticks(mapping_value)  # 設置顏色條刻度
+# # 獲取mapping所有value
+cbar.set_ticklabels(mapping_key)  # 設置顏色條標籤
+plt.title('predict')
 plt.xlabel('Width (units)')
 plt.ylabel('Depth (units)')
-plt.savefig('geological_type_prediction_entiry.png')
+plt.savefig('predict.png')
 plt.show()
 plt.clf()
 
