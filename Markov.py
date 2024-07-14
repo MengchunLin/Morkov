@@ -189,6 +189,7 @@ for layer in range(2, D + 1):
 
 # 重塑地質類型分組數組為矩陣
 group_matrix = group_number.reshape(D, W)
+print(group_matrix)
 
 # 可視化地質類型分布
 plt.imshow(group_matrix, cmap='tab10', origin='upper')

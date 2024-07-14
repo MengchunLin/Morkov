@@ -66,6 +66,7 @@ def calculate_transition_matrix(matrix,hole_location):
             soiltype_V[k] = soiltype_V.get(k, 0) + 1
 
     soiltype_V = sorted(soiltype_V.items(), key=op.itemgetter(0), reverse=False)
+    
 
     VPCM = np.zeros([len(soiltype_V), len(soiltype_V)])
     Tmatrix_V = np.zeros([len(soiltype_V), len(soiltype_V)])
@@ -85,6 +86,7 @@ def calculate_transition_matrix(matrix,hole_location):
     for i in range(np.size(Tmatrix_V, 1)):
         for j in range(np.size(Tmatrix_V, 1)):
             Tmatrix_V[i][j] = Tmatrix_V[i][j] / count_V[i]
+    print('Tmatrix_V:', Tmatrix_V)
 
     K = 9.3
     HPCM = np.zeros([len(count_V), len(count_V)])
@@ -104,7 +106,12 @@ def calculate_transition_matrix(matrix,hole_location):
         for j in range(np.size(Tmatrix_H, 1)):
             Tmatrix_H[i][j] = Tmatrix_H[i][j] / count_H[i]
 
+    print('Tmatrix_V:\n', Tmatrix_V)
+    print('Tmatrix_H:\n', Tmatrix_H)
+
+
     return Tmatrix_V, Tmatrix_H ,group_number
+
 
 # 計算 HoleLocation_entire 的轉移矩陣
 Tmatrix_V_entire, Tmatrix_H_entire ,group_number_entire= calculate_transition_matrix(entiry_matrix,HoleLocation_entire)
