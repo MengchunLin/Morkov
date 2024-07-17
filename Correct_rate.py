@@ -9,7 +9,7 @@ denominator = 0
 molecular = 0
 HoleLocation_entire = []
 HoleLocation_verify = []
-verify_hole_index = 3
+verify_hole_index = 2
 verify_matrix =np.array([])
 
 # 定義模型的間隔、寬度、深度、面積、孔洞數量和地質類型數量等參數
