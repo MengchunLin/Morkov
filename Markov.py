@@ -143,7 +143,8 @@ conditions = {}
 for j in range(1, len(HoleLocation)):
     conditions[(HoleLocation[j - 1], HoleLocation[j])] = HoleLocation[j]
 
-print(conditions)
+print('condition',conditions)
+
 
 # 進行地質類型的預測
 for layer in range(2, D + 1):
@@ -174,10 +175,12 @@ for layer in range(2, D + 1):
                 Nx_TH = np.dot(Nx_TH, Tmatrix_H)
 
             for f in range(typenumber):
+                print('f',f)
                 f_item1 = Tmatrix_H[L_state.astype(int)][f]
                 f_item2 = Nx_TH[f][Q_state.astype(int)]
                 f_item3 = Tmatrix_V[M_state.astype(int)][f]
                 f_sum += f_item1 * f_item2 * f_item3
+
 
             for k in range(typenumber):
                 k_item1 = Tmatrix_H[L_state.astype(int)][k]

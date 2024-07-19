@@ -9,7 +9,7 @@ denominator = 0
 molecular = 0
 HoleLocation_entire = []
 HoleLocation_verify = []
-verify_hole_index = 2
+verify_hole_index = 3
 verify_matrix =np.array([])
 
 # 定義模型的間隔、寬度、深度、面積、孔洞數量和地質類型數量等參數
@@ -183,7 +183,8 @@ predict_result_verify = predict_geological_types(Tmatrix_V_verify, Tmatrix_H_ver
 # 重塑地質類型分組數組為矩陣
 predict_result_entire = predict_result_entire.reshape(D, W)
 predict_result_verify = predict_result_verify.reshape(D, W)
-print('預測鑽孔編號:',verify_hole_index,  HoleLocation_verify[verify_hole_index])
+# print('預測鑽孔編號:',verify_hole_index,  HoleLocation_verify[verify_hole_index])
+print('預測鑽孔編號:',verify_hole_index)
 verify_array = predict_result_verify[:, HoleLocation_entire[verify_hole_index]]
 for i, x in zip(test_hole, verify_array):
     if i == x:

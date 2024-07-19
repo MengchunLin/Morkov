@@ -166,6 +166,7 @@ def predict_geological_types(Tmatrix_V, Tmatrix_H, HoleLocation,group_number):
                         if HoleLocation[holeIndex] != 0:
                             Nx = HoleLocation[holeIndex]
                             break
+                    # 矩陣乘法更新Nx_TH
                     for _ in range(1, Nx - i):
                         Nx_TH = np.dot(Nx_TH, Tmatrix_H)
             else:
@@ -187,7 +188,7 @@ def predict_geological_types(Tmatrix_V, Tmatrix_H, HoleLocation,group_number):
                 f_sum += f_item1 * f_item2 * f_item3
             if f_sum == 0 :
                 current_matrix= np.ones(typenumber) / typenumber
-                # print('current_matrix:',current_matrix)
+                print('current_matrix:',current_matrix)
             else:
                 for k in range(typenumber):
                     k_item1 = Tmatrix_H[int(L_state)][k]
