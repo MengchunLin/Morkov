@@ -28,7 +28,6 @@ depth=(len(entiry_matrix))
 W = int(width / interval)  
 D = int(depth / interval)  
 A = W * D
-print('W:',W,'D:',D,'A:',A)
 
 # 獲取不同數字的數量
 unique_numbers = np.unique(entiry_matrix)
@@ -48,27 +47,22 @@ current_matrix=np.zeros((1,len(transitionName)))
 HoleLocation_entire=Hole_distance/interval
 HoleLocation_entire=HoleLocation_entire.astype(int)
 HoleLocation_entire[0]=1
-print('孔洞位置:', HoleLocation_entire)
 
 
 
 # 計算轉移概率矩陣的函數
 def calculate_transition_matrix(matrix,hole_location):
     group_number = np.zeros(A)
-    print("location size",hole_location)
     # # 將地質數據中的類型分組存儲到 group_number 數組中
     for i in range(1, 74, 1):
         group_number[i - 1] = 1
     for i in range(74, 140, 1):
         group_number[i - 1] = 2
-    print(len(hole_location))
 
     for j in range(0, depth  , 1):
-        print('j:',j)
         for i in range(len(hole_location)):
             position=hole_location[i] + j * W - 1
             group_number[ position ] = matrix[j][i]
-            print(j,i , matrix[j][i])
 
             
     T_t_V = np.zeros(len(matrix))
