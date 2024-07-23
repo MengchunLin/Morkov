@@ -15,7 +15,7 @@ eightSoil='8soil.csv'
 entire_file = pd.read_csv(test, delimiter=",").fillna(0).values # 讀取文件空值全部補0
 entire_matrix = entire_file[1:, :]  # skip first column 第一行是位置
 Hole_distance = entire_file[0]
-initial_array = entire_file[1]
+initial_array = entire_file[-1]
 # 取得土壤種類
 unique_numbers = np.unique(entire_matrix)
 # 從unique_numbers過濾掉0
@@ -71,11 +71,11 @@ def calculate_transition_matrix(matrix,hole_location):
     for location in Hole_distance:
         for type in initial_array:
             for i in range(W):
-                if i<location/interval:
-                    group_number[0][i] = mapping[type]
+                if i<=location/interval and type!=0:
+                    group_number[-1][i] = mapping[type]
+                    print('group_number:',group_number[-1][i])
                 else:
                     continue
-    print('group_number:',group_number[0])
     
     for i in range(D):
         for j in range(len(hole_location)):
@@ -104,6 +104,7 @@ def calculate_transition_matrix(matrix,hole_location):
     #         else:
     #             soiltype_V[item] = 1
     #------------------------------------------------------------ 
+
     soiltype_V = Counter(matrix.flatten())
     del soiltype_V[0]  # Remove count of zeros, if necessary
     soiltype_V = sorted(soiltype_V.items(), key=op.itemgetter(0), reverse=False)
@@ -153,6 +154,7 @@ def calculate_transition_matrix(matrix,hole_location):
 Tmatrix_V_entire, Tmatrix_H_entire ,group_number_entire= calculate_transition_matrix(entire_matrix,HoleLocation_entire)
 print('Tmatrix_V_entire:\n',Tmatrix_V_entire)
 print('Tmatrix_H_entire:\n',Tmatrix_H_entire)
+
 # 預測地質類型的函數
 def predict_geological_types(Tmatrix_V, Tmatrix_H, HoleLocation,group_number):
     L_state = 0
@@ -162,41 +164,43 @@ def predict_geological_types(Tmatrix_V, Tmatrix_H, HoleLocation,group_number):
     current_matrix = np.zeros(len(transitionName))
 
     conditions = {}
+    print('HoleLocation:',len(HoleLocation))
     for j in range(1, len(HoleLocation)):
         conditions[(HoleLocation[j - 1], HoleLocation[j])] = HoleLocation[j]
-    for layer in range(1,D):
-        for i in range(W):
-            # 若為位置是有資料的就跳過(為鑽孔位置)
-            if group_number[layer][i] :
-                continue
-            
-            L_state = 0
-            M_state = 0
-            Q_state = 0
-            Nx_TH = Tmatrix_H
-            f_sum = 0
-            k_sum = 0
-            Nx=0
-            if i in HoleLocation:
-                if i!=0:
-                    holekey=np.where(HoleLocation == i)[0][0]
-                    for holeIndex in range(holekey,-1,-1):
-                        if HoleLocation[holeIndex] != 0:
-                            Nx = HoleLocation[holeIndex]
-                            break
-                    # 矩陣乘法更新Nx_TH
+        print('conditions:',conditions)
+    for layer in range(D-1,0, -1):  # Start from second to last row, moving upwards
+            print('layer:',layer)
+            for i in range(W):
+                if group_number[layer][i]:
+                    continue
+                
+                L_state = 0
+                M_state = 0
+                Q_state = 0
+                Nx_TH = Tmatrix_H
+                f_sum = 0
+                Nx = 0
+                
+                if i in HoleLocation:
+                    if i != 0:
+                        holekey = np.where(HoleLocation == i)[0][0]
+                        for holeIndex in range(holekey, -1, -1):
+                            if HoleLocation[holeIndex] != 0:
+                                Nx = HoleLocation[holeIndex]
+                                break
                     for _ in range(1, Nx - i):
                         Nx_TH = np.dot(Nx_TH, Tmatrix_H)
-            else:
-                for (lower, upper), nx in conditions.items():
-                    if lower < i < upper:
-                        Nx = nx
-                        break
-                for _ in range(1, Nx - i):
-                    Nx_TH = np.dot(Nx_TH, Tmatrix_H)
-            L_state = group_number[layer][i-1] - 1
-            M_state = group_number[layer-1][i] - 1
-            Q_state = group_number[layer][Nx] - 1          
+                else:
+                    for (lower, upper), nx in conditions.items():
+                        if lower < i < upper:
+                            Nx = nx
+                            break
+                    for _ in range(1, Nx - i):
+                        Nx_TH = np.dot(Nx_TH, Tmatrix_H)
+                
+                L_state = group_number[layer][i-1] - 1
+                M_state = group_number[layer+1][i] - 1  # Changed this to look at the layer below
+                Q_state = group_number[layer][Nx] - 1         
            
             
             for f in range(typenumber):
@@ -244,9 +248,9 @@ print('mapping_key:',mapping_key)
 print('mapping_value:',mapping_value)
 cbar.set_ticks(mapping_value)  # 設置顏色條刻度
 cbar.set_ticklabels(mapping_key)  # 設置顏色條標籤
-plt.title('predict')
+plt.title('Predict (Bottom to Top)')
 plt.xlabel('Width (units)')
 plt.ylabel('Depth (units)')
-plt.savefig('predict.png')
+plt.savefig('predict_bottom_to_top.png')
 plt.show()
 plt.clf()
