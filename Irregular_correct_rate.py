@@ -10,23 +10,46 @@ Matrix5D = '5DMatrix.csv'
 sixHole = '6Hole.csv'
 test='test - 複製.csv'
 eightSoil='8soil.csv'
+predict_hole=4
 # -----------testing file----------------
 # file preprocessing
-entire_file = pd.read_csv(test, delimiter=",").fillna(0).values # 讀取文件空值全部補0
-entire_matrix = entire_file[1:, :]  # skip first column 第一行是位置
+entire_file = pd.read_csv(test, delimiter=",").fillna(0).values
+entire_matrix = entire_file[1:, :]  # skip first column
+
+# predict_hole_data = entire_file[2:, predict_hole]
+# print('predict_hole_data:', predict_hole_data)
+
+# entire_matrix[:,predict_hole]=0
+# print('entire_matrix:',entire_matrix)
+
 Hole_distance = entire_file[0]
+Hole_distance=np.delete(Hole_distance,predict_hole)
+print('Hole_distance:',Hole_distance)
+
 initial_array = entire_file[1]
+initial_array=np.delete(initial_array,predict_hole)
+
 # 取得土壤種類
 unique_numbers = np.unique(entire_matrix)
+
 # 從unique_numbers過濾掉0
 unique_numbers = unique_numbers[unique_numbers != 0]
 typenumber = len(unique_numbers)
+
 # 建立土壤代號對應的數字
 mapping = {value: index+1 for index, value in enumerate(unique_numbers)}
-# 將公司土壤代號轉換為 1 ~ ...
 def map_value(value):
-    return mapping.get(value, value)  # 如果 value 在 mapping 中有對應的值，則映射；否則保持原值
-entire_matrix =  np.vectorize(map_value)(entire_matrix)
+    return mapping.get(value, value)
+entire_matrix = np.vectorize(map_value)(entire_matrix)
+predict_hole_data=entire_file[2:,predict_hole]
+predict_hole_data=np.vectorize(map_value)(predict_hole_data)
+print('predict_hole_data:', predict_hole_data)
+
+entire_matrix[:,predict_hole]=0
+
+
+
+
 transitionName = np.arange(1,typenumber+1)
 # file preprocessing
 
@@ -218,18 +241,37 @@ def predict_geological_types(Tmatrix_V, Tmatrix_H, HoleLocation,group_number):
 
             # 進行預測
             predict_type = np.random.choice(transitionName, replace=True, p=current_matrix)
-            if i in HoleLocation:
-                print('k_sum:',k_sum,'f_sum:',f_sum,'Nx:',Nx)
-                # print('layer:',layer,'i:',i)
-                # print('predict_type:',predict_type)
-                # print('current_matrix:',current_matrix)
-                # print('transitionName:',transitionName)
+            # if i in HoleLocation:
+            #     print('k_sum:',k_sum,'f_sum:',f_sum,'Nx:',Nx)
+
             group_number[layer][i] =predict_type
     return group_number
 
 
+
+
 predict_result_entire = predict_geological_types(Tmatrix_V_entire, Tmatrix_H_entire, HoleLocation_entire,group_number_entire)
-print('predict_result_entire:\n',predict_result_entire)
+correct_location=Hole_distance[predict_hole]
+print('coeeect_location:',correct_location)
+print('predict_result:',predict_result_entire[1])
+predict_result=predict_result_entire[int(Hole_distance[predict_hole]/interval)]
+print('predict_result:',predict_result)
+
+
+print('predict_hole_data:', predict_hole_data)
+
+molecular = 0
+denominator = 0
+for i, x in zip(predict_hole_data, predict_result):
+    if i != 0:
+        if i == x:
+            molecular += 1
+            denominator += 1
+        else:
+            denominator += 1
+correct_rate=molecular/denominator
+print('Correct_rate:',correct_rate)
+
 
 
 

@@ -10,12 +10,17 @@ Matrix5D = '5DMatrix.csv'
 sixHole = '6Hole.csv'
 test='test - 複製.csv'
 eightSoil='8soil.csv'
+predict_hole=3
 # -----------testing file----------------
 # file preprocessing
 entire_file = pd.read_csv(test, delimiter=",").fillna(0).values # 讀取文件空值全部補0
 entire_matrix = entire_file[1:, :]  # skip first column 第一行是位置
+entire_matrix[:,predict_hole]=0
 Hole_distance = entire_file[0]
+Hole_distance=np.delete(Hole_distance,predict_hole)
+print('Hole_distance:',Hole_distance)
 initial_array = entire_file[1]
+initial_array=np.delete(initial_array,predict_hole)
 # 取得土壤種類
 unique_numbers = np.unique(entire_matrix)
 # 從unique_numbers過濾掉0
