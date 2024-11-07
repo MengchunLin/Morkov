@@ -3,6 +3,8 @@ import pandas as pd
 import operator as op
 import matplotlib.pyplot as plt
 from collections import Counter
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 
 # -----------testing file----------------
 Matrix4D = "test.csv"
@@ -234,19 +236,56 @@ print('predict_result_entire:\n',predict_result_entire)
 
 
 # 可視化地質類型分布
-plt.figure(figsize=(6, 4), dpi=150)
-plt.imshow(predict_result_entire, cmap='tab10', origin='upper')
-cbar = plt.colorbar()
-# 獲取mapping所有key
 mapping_key = list(mapping.keys())
 mapping_value = list(mapping.values())
 print('mapping_key:',mapping_key)
 print('mapping_value:',mapping_value)
-cbar.set_ticks(mapping_value)  # 設置顏色條刻度
-cbar.set_ticklabels(mapping_key)  # 設置顏色條標籤
-plt.title('Prediction(top to bottom)')
+original_ticks = np.arange(0, int(Hole_distance.max() / interval), 100)
+# 缩放后的 x 轴刻度标签
+scaled_labels = (original_ticks * interval).astype(int)
+plt.figure(figsize=(8, 4), dpi=150)  # 调整宽度以适应图例
+im = plt.imshow(predict_result_entire, cmap='tab10', origin='upper', aspect='auto')
+colors = plt.cm.tab10(range(len(mapping_value)))  # 颜色列表，与地质类型数量匹配
+patches = [mpatches.Patch(color=colors[i], label=f"Type {int(mapping_key[i])}") for i in range(len(mapping_key))]
+
+plt.legend(
+    handles=patches,
+    loc='center left',  
+    bbox_to_anchor=(1.05, 0.5), 
+    title="Geological Types",
+    fontsize=8,
+    title_fontsize=10,
+    frameon=True
+)
+# 根據鑽孔位置畫出垂直線
+for i in HoleLocation_entire:
+    print(i)
+    plt.axvline(x=i, color='black', linestyle='--', linewidth=0.5)
+    plt.axvline(x=i-interval, color='black', linestyle='--', linewidth=0.5)
+
+
+plt.xticks(
+    ticks=original_ticks,  # 原始位置
+    labels=scaled_labels,  # 缩放后的标签
+    fontsize=10
+)
+plt.yticks(
+    ticks=np.arange(0, D, 50),
+    labels=np.arange(0, D, 50),
+    fontsize=10
+)
+plt.gca().set_aspect('auto')
+
+# 限制 x 轴范围
+plt.xlim(0, W)  # 从 0 到 W（宽度范围）
+
+# 限制 y 轴范围
+plt.ylim(D,0)  # 从 0 到 D（深度范围）
+
+plt.tight_layout(rect=[0, 0, 0.9, 1])
+plt.title('Prediction (top to bottom)')
 plt.xlabel('Width (units)')
 plt.ylabel('Depth (units)')
-plt.savefig('Prediction(top to bottom).png')
+plt.tight_layout() 
+plt.savefig('Prediction_with_legend_side.png')
 plt.show()
-plt.clf()
