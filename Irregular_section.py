@@ -12,9 +12,10 @@ Matrix5D = '5DMatrix.csv'
 sixHole = '6Hole.csv'
 test='test - 複製.csv'
 eightSoil='8soil.csv'
+CECI='活頁簿1.csv'
 # -----------testing file----------------
 # file preprocessing
-entire_file = pd.read_csv(test, delimiter=",").fillna(0).values # 讀取文件空值全部補0
+entire_file = pd.read_csv(CECI, delimiter=",").fillna(0).values # 讀取文件空值全部補0
 entire_matrix = entire_file[1:, :]  # skip first column 第一行是位置
 Hole_distance = entire_file[0]
 initial_array = entire_file[1]
@@ -245,8 +246,26 @@ original_ticks = np.arange(0, int(Hole_distance.max() / interval), 100)
 scaled_labels = (original_ticks * interval).astype(int)
 plt.figure(figsize=(8, 4), dpi=150)  # 调整宽度以适应图例
 im = plt.imshow(predict_result_entire, cmap='tab10', origin='upper', aspect='auto')
-colors = plt.cm.tab10(range(len(mapping_value)))  # 颜色列表，与地质类型数量匹配
-patches = [mpatches.Patch(color=colors[i], label=f"Type {int(mapping_key[i])}") for i in range(len(mapping_key))]
+soil_color_mapping = {
+    1: 'lightsalmon',       
+    2: 'lightsteelblue',      
+    3: 'plum',     
+    4: 'darkkhaki',      
+    5: 'burlywood',    
+}
+
+# 确保 mapping_key 的每个土壤类型都有对应颜色
+custom_colors = [soil_color_mapping[key] for key in mapping_key]
+
+# 检查生成的颜色列表
+print("颜色列表:", custom_colors)
+
+# 用自定义颜色生成图例
+patches = [
+    mpatches.Patch(color=custom_colors[i], label=f"Type {int(mapping_key[i])}")
+    for i in range(len(mapping_key))
+]
+patches = [mpatches.Patch(color=custom_colors[i], label=f"Type {int(mapping_key[i])}") for i in range(len(mapping_key))]
 
 plt.legend(
     handles=patches,
@@ -270,8 +289,8 @@ plt.xticks(
     fontsize=10
 )
 plt.yticks(
-    ticks=np.arange(0, D, 50),
-    labels=np.arange(0, D, 50),
+    ticks=np.arange(0, D, 200),
+    labels=np.arange(0, D, 200),
     fontsize=10
 )
 plt.gca().set_aspect('auto')
