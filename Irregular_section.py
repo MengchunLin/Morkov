@@ -13,6 +13,7 @@ sixHole = '6Hole.csv'
 test='test - 複製.csv'
 eightSoil='8soil.csv'
 CECI='活頁簿1.csv'
+CTCI='CTCI.csv'
 # -----------testing file----------------
 # file preprocessing
 entire_file = pd.read_csv(CECI, delimiter=",").fillna(0).values # 讀取文件空值全部補0
@@ -244,28 +245,28 @@ print('mapping_value:',mapping_value)
 original_ticks = np.arange(0, int(Hole_distance.max() / interval), 100)
 # 缩放后的 x 轴刻度标签
 scaled_labels = (original_ticks * interval).astype(int)
-plt.figure(figsize=(8, 4), dpi=150)  # 调整宽度以适应图例
-im = plt.imshow(predict_result_entire, cmap='tab10', origin='upper', aspect='auto')
-soil_color_mapping = {
+# 定義自定義顏色映射
+soil_colors = {
     1: 'lightsalmon',       
     2: 'lightsteelblue',      
     3: 'plum',     
     4: 'darkkhaki',      
-    5: 'burlywood',    
+    5: 'burlywood',   
 }
+import matplotlib.colors as mcolors
+# 創建自定義的離散顏色映射
+colors = [soil_colors[i] for i in range(1, len(soil_colors) + 1)]
+cmap = mcolors.ListedColormap(colors)
 
-# 确保 mapping_key 的每个土壤类型都有对应颜色
-custom_colors = [soil_color_mapping[key] for key in mapping_key]
+# 設置圖形大小
+plt.figure(figsize=(8, 4), dpi=150)
 
-# 检查生成的颜色列表
-print("颜色列表:", custom_colors)
+# 使用自定義的顏色映射來顯示預測結果
+im = plt.imshow(predict_result_entire, cmap=cmap, origin='upper', aspect='auto')
 
-# 用自定义颜色生成图例
-patches = [
-    mpatches.Patch(color=custom_colors[i], label=f"Type {int(mapping_key[i])}")
-    for i in range(len(mapping_key))
-]
-patches = [mpatches.Patch(color=custom_colors[i], label=f"Type {int(mapping_key[i])}") for i in range(len(mapping_key))]
+# 創建圖例
+patches = [mpatches.Patch(color=soil_colors[i], label=f"Type {int(mapping_key[i-1])}") 
+          for i in range(1, len(mapping) + 1)]
 
 plt.legend(
     handles=patches,
@@ -276,16 +277,19 @@ plt.legend(
     title_fontsize=10,
     frameon=True
 )
-# 根據鑽孔位置畫出垂直線
+
+# 繪製鑽孔位置的垂直線
 for i in HoleLocation_entire:
-    print(i)
     plt.axvline(x=i, color='black', linestyle='--', linewidth=0.5)
     plt.axvline(x=i-interval, color='black', linestyle='--', linewidth=0.5)
 
+# 設置刻度
+original_ticks = np.arange(0, int(Hole_distance.max() / interval), 100)
+scaled_labels = (original_ticks * interval).astype(int)
 
 plt.xticks(
-    ticks=original_ticks,  # 原始位置
-    labels=scaled_labels,  # 缩放后的标签
+    ticks=original_ticks,
+    labels=scaled_labels,
     fontsize=10
 )
 plt.yticks(
@@ -293,18 +297,15 @@ plt.yticks(
     labels=np.arange(0, D, 200),
     fontsize=10
 )
+
+# 設置圖形外觀
 plt.gca().set_aspect('auto')
-
-# 限制 x 轴范围
-plt.xlim(0, W)  # 从 0 到 W（宽度范围）
-
-# 限制 y 轴范围
-plt.ylim(D,0)  # 从 0 到 D（深度范围）
-
+plt.xlim(0, W)
+plt.ylim(D, 0)
 plt.tight_layout(rect=[0, 0, 0.9, 1])
 plt.title('Prediction (top to bottom)')
 plt.xlabel('Width (units)')
 plt.ylabel('Depth (units)')
-plt.tight_layout() 
+plt.tight_layout()
 plt.savefig('Prediction_with_legend_side.png')
 plt.show()
