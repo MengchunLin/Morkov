@@ -12,7 +12,7 @@ Matrix5D = '5DMatrix.csv'
 sixHole = '6Hole.csv'
 test='test - 複製.csv'
 eightSoil='8soil.csv'
-CECI='活頁簿1.csv'
+CECI='CECI_borehole.csv'
 CTCI='CTCI.csv'
 # -----------testing file----------------
 # file preprocessing
@@ -158,6 +158,7 @@ Tmatrix_V_entire, Tmatrix_H_entire ,group_number_entire= calculate_transition_ma
 print('Tmatrix_V_entire:\n',Tmatrix_V_entire)
 print('Tmatrix_H_entire:\n',Tmatrix_H_entire)
 # 預測地質類型的函數
+
 def predict_geological_types(Tmatrix_V, Tmatrix_H, HoleLocation,group_number):
     L_state = 0
     M_state = 0
@@ -196,8 +197,10 @@ def predict_geological_types(Tmatrix_V, Tmatrix_H, HoleLocation,group_number):
                     if lower < i < upper:
                         Nx = nx
                         break
-                for _ in range(1, Nx - i):
-                    Nx_TH = np.dot(Nx_TH, Tmatrix_H)
+            Nx_TH = np.eye(Tmatrix_H.shape[0])
+            for _ in range(Nx - i):
+                Nx_TH = np.dot(Nx_TH, Tmatrix_H)
+
             L_state = group_number[layer][i-1] - 1
             M_state = group_number[layer-1][i] - 1
             Q_state = group_number[layer][Nx] - 1          
@@ -237,6 +240,7 @@ print('predict_result_entire:\n',predict_result_entire)
 
 
 
+
 # 可視化地質類型分布
 mapping_key = list(mapping.keys())
 mapping_value = list(mapping.values())
@@ -253,6 +257,7 @@ soil_colors = {
     4: 'darkkhaki',      
     5: 'burlywood',   
 }
+
 import matplotlib.colors as mcolors
 # 創建自定義的離散顏色映射
 colors = [soil_colors[i] for i in range(1, len(soil_colors) + 1)]
