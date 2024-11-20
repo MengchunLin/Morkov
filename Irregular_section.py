@@ -227,10 +227,6 @@ def predict_geological_types(Tmatrix_V, Tmatrix_H, HoleLocation,group_number):
             predict_type = np.random.choice(transitionName, replace=True, p=current_matrix)
             if i in HoleLocation:
                 print('k_sum:',k_sum,'f_sum:',f_sum,'Nx:',Nx)
-                # print('layer:',layer,'i:',i)
-                # print('predict_type:',predict_type)
-                # print('current_matrix:',current_matrix)
-                # print('transitionName:',transitionName)
             group_number[layer][i] =predict_type
     return group_number
 
@@ -238,7 +234,38 @@ def predict_geological_types(Tmatrix_V, Tmatrix_H, HoleLocation,group_number):
 predict_result_entire = predict_geological_types(Tmatrix_V_entire, Tmatrix_H_entire, HoleLocation_entire,group_number_entire)
 print('predict_result_entire:\n',predict_result_entire)
 
+def irregular_shift(predict_result_entire, max_shift):
+    """
+    根據線性規則將矩陣逐列向下移動，形成不規則矩陣。
+    
+    Args:
+        predict_result_entire (ndarray): 原始矩陣，大小為 (D, W)
+        max_shift (int): 最大移動深度（最右列的移動量）
+    
+    Returns:
+        ndarray: 不規則矩陣
+    """
+    D, W = predict_result_entire.shape  # 原矩陣大小
 
+    # 計算新矩陣的高度
+    new_height = D + max_shift
+
+    # 初始化新矩陣，填充為 NaN 或其他佔位符
+    irregular_matrix = np.full((new_height, W), np.nan)
+
+    # 設定線性移動規則，移動量從 0 到 max_shift
+    shift_values = np.linspace(0, max_shift, W, dtype=int)
+
+    # 逐列移動
+    for col in range(W):
+        shift = shift_values[col]  # 當前列的移動深度
+        irregular_matrix[shift:shift + D, col] = predict_result_entire[:, col]
+
+    return irregular_matrix
+
+# 不規則矩陣
+# max_shift = 4
+# irregular_matrix = irregular_shift(predict_result_entire, max_shift)
 
 
 # 可視化地質類型分布
@@ -256,6 +283,7 @@ soil_colors = {
     3: 'plum',     
     4: 'darkkhaki',      
     5: 'burlywood',   
+    'nan': 'white'
 }
 
 import matplotlib.colors as mcolors
