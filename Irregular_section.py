@@ -264,8 +264,11 @@ def irregular_shift(predict_result_entire, max_shift):
     return irregular_matrix
 
 # 不規則矩陣
-# max_shift = 4
-# irregular_matrix = irregular_shift(predict_result_entire, max_shift)
+max_shift = 50
+irregular_matrix = irregular_shift(predict_result_entire, max_shift)
+print('irregular_matrix:\n',irregular_matrix)
+
+D=irregular_matrix.shape[0]
 
 
 # 可視化地質類型分布
@@ -283,7 +286,6 @@ soil_colors = {
     3: 'plum',     
     4: 'darkkhaki',      
     5: 'burlywood',   
-    'nan': 'white'
 }
 
 import matplotlib.colors as mcolors
@@ -295,7 +297,7 @@ cmap = mcolors.ListedColormap(colors)
 plt.figure(figsize=(8, 4), dpi=150)
 
 # 使用自定義的顏色映射來顯示預測結果
-im = plt.imshow(predict_result_entire, cmap=cmap, origin='upper', aspect='auto')
+im = plt.imshow(irregular_matrix, cmap=cmap, origin='upper', aspect='auto')
 
 # 創建圖例
 patches = [mpatches.Patch(color=soil_colors[i], label=f"Type {int(mapping_key[i-1])}") 

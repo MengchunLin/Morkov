@@ -1,7 +1,6 @@
 import tkinter as tk
 from tkinter import filedialog, simpledialog, messagebox
 import pandas as pd
-import Data_processing
 
 file_path_list = []  # 用於存儲檔案名稱
 file_distance_list = []  # 用於存儲檔案座標
@@ -77,12 +76,20 @@ def read_files_and_coordinates():
     # 讀取選取的檔案路徑
     for file_path in file_path_list:
         # 讀取檔案
-        df = pd.read_csv(file_path)
+        df = pd.read_excel(file_path)
         # 處理檔案
         Soil_type = df['Soil Type']
-        # 統計Soil_type出現最多次的值
-        mode = Soil_type.mode()
-        print(mode)
+        range = combine_thickness/2
+        print(range)
+        # 每range筆資料合併
+        for i in range(len(Soil_type)):
+            data_to_combime = Soil_type[i:i+range]
+            #統計data_to_combime內出現最多次的值
+            data_to_combime_mode = data_to_combime.mode()
+            print(data_to_combime_mode)
+            
+            
+        
 
         
 
