@@ -5,9 +5,10 @@ import pandas as pd
 file_path_list = []  # 用於存儲檔案名稱
 file_distance_list = []  # 用於存儲檔案座標
 markov_matrix = []  # 用於存儲檔案的markov matrix
-combine_thickness = []  # 用於存儲檔案的厚度
+
 
 def select_files_and_set_coordinates():
+    global file_path_list, file_distance_list  # Use global variables
     root = tk.Tk()
     root.withdraw()  # 隱藏主視窗
 
@@ -15,7 +16,7 @@ def select_files_and_set_coordinates():
     num_files = simpledialog.askinteger("檔案選擇次數", "請輸入需要選擇檔案的次數：", parent=root)
     if not num_files or num_files <= 0:
         messagebox.showerror("錯誤", "無效的檔案數量。程式結束。")
-        return
+        return None, None, None
 
     for i in range(num_files):
         # 選擇檔案
@@ -36,16 +37,11 @@ def select_files_and_set_coordinates():
         x_entry = tk.Entry(coordinate_window, textvariable=x_var)
         x_entry.grid(row=0, column=1, padx=10, pady=10)
 
-        # 用於控制迴圈的標誌
-        coordinates_entered = False
-
         def save_coordinates():
-            nonlocal coordinates_entered
             try:
                 x = float(x_var.get())
                 file_path_list.append(file_path)
                 file_distance_list.append(x)
-                coordinates_entered = True
                 coordinate_window.destroy()
             except ValueError:
                 messagebox.showerror("錯誤", "請輸入有效的座標值")
@@ -59,8 +55,8 @@ def select_files_and_set_coordinates():
     combine_thickness = simpledialog.askinteger("合併厚度", "請輸入合併厚度：", parent=root)
     if not combine_thickness or combine_thickness <= 0:
         messagebox.showerror("錯誤", "無效的合併厚度。程式結束。")
-        return
-    
+        return None, None, None
+
     # 顯示選取結果
     file_data = list(zip(file_path_list, file_distance_list))
     print(file_data)
@@ -71,30 +67,78 @@ def select_files_and_set_coordinates():
     # 回傳選取檔案路徑及座標
     return file_path_list, file_distance_list, combine_thickness
 
-# 讀取選取的檔案路徑及座標
-def read_files_and_coordinates():
+
+def read_files_and_coordinates(file_path_list, combine_thickness):
+    if not file_path_list or combine_thickness is None:
+        print("未提供檔案路徑或合併厚度。")
+        return
+
+    global markov_matrix  # Use the global markov_matrix
+    combined_results = {}  # 使用字典儲存，鍵為檔案名稱，值為合併結果
+
     # 讀取選取的檔案路徑
     for file_path in file_path_list:
-        # 讀取檔案
-        df = pd.read_excel(file_path)
-        # 處理檔案
-        Soil_type = df['Soil Type']
-        range = combine_thickness/2
-        print(range)
-        # 每range筆資料合併
-        for i in range(len(Soil_type)):
-            data_to_combime = Soil_type[i:i+range]
-            #統計data_to_combime內出現最多次的值
-            data_to_combime_mode = data_to_combime.mode()
-            print(data_to_combime_mode)
-            
-            
-        
+        try:
+            # 讀取檔案
+            df = pd.read_excel(file_path)
 
-        
+            if 'Soil Type' not in df.columns:
+                print(f"檔案 {file_path} 不包含 'Soil Type' 欄位，跳過。")
+                continue
+
+            soil_type = df['Soil Type']
+            print(f"合併厚度: {combine_thickness}")
+            half_range = combine_thickness // 2  # 整數除法
+            print(f"半厚度範圍: {half_range}")
+
+            # 每 range 筆資料合併
+            combined_soil_types = []
+            for i in range(0, len(soil_type), half_range):
+                data_to_combine = soil_type[i:i + half_range]
+                if not data_to_combine.empty:
+                    mode_result = data_to_combine.mode()
+                    if not mode_result.empty:
+                        data_to_combine_mode = mode_result.iloc[0]
+                        combined_soil_types.append(data_to_combine_mode)
+                    else:
+                        combined_soil_types.append(None)  # 處理無眾數情況
+                else:
+                    combined_soil_types.append(None)  # 處理空資料範圍
+
+            print(f"合併結果: {combined_soil_types}")
+            combined_results[file_path] = combined_soil_types
+            markov_matrix.append(combined_soil_types)
+
+        except Exception as e:
+            print(f"讀取檔案 {file_path} 時發生錯誤: {e}")
+
+    # 將合併結果轉為 DataFrame，欄為檔案名稱，列為位置
+    max_length = max(len(row) for row in combined_results.values()) if combined_results else 0
+    combined_df = pd.DataFrame(
+        {f"檔案 {i+1}": value + [None] * (max_length - len(value)) for i, value in enumerate(combined_results.values())},
+        index=[f"Depth {i+1}" for i in range(max_length)]
+    )
+
+    # 把markov_matrix內nan值改為0
+    for i in range(len(combined_df)):
+        for j in range(len(combined_df[i])):
+            if combined_df[i][j] is None:
+                combined_df[i][j] = 0
+    print("\n合併結果 DataFrame:")
+    print(combined_df)
+    return combined_df
+
+
+
 
 
 
 if __name__ == "__main__":
-    select_files_and_set_coordinates()
-    read_files_and_coordinates()
+    paths, distances, thickness = select_files_and_set_coordinates()
+    if paths and distances and thickness:
+        combined_df = read_files_and_coordinates(paths, thickness)
+        print("\n保存結果 DataFrame:")
+        print(combined_df)
+
+
+
