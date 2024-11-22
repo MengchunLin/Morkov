@@ -1,10 +1,10 @@
 import tkinter as tk
 from tkinter import filedialog, simpledialog, messagebox
 import pandas as pd
+import json
 
 file_path_list = []  # 用於存儲檔案名稱
 file_distance_list = []  # 用於存儲檔案座標
-markov_matrix = []  # 用於存儲檔案的markov matrix
 
 
 def select_files_and_set_coordinates():
@@ -61,10 +61,11 @@ def select_files_and_set_coordinates():
     file_data = list(zip(file_path_list, file_distance_list))
     print(file_data)
 
-    # markov_matrix第一行為位置
-    markov_matrix.append(file_distance_list)
-
     # 回傳選取檔案路徑及座標
+    # 把file_path_list 轉成json路徑
+    with open('file_path_list.json', 'w') as f:
+        json.dump(file_path_list, f)
+
     return file_path_list, file_distance_list, combine_thickness
 
 
@@ -73,7 +74,6 @@ def read_files_and_coordinates(file_path_list, combine_thickness):
         print("未提供檔案路徑或合併厚度。")
         return
 
-    global markov_matrix  # Use the global markov_matrix
     combined_results = {}  # 使用字典儲存，鍵為檔案名稱，值為合併結果
 
     # 讀取選取的檔案路徑
@@ -107,7 +107,6 @@ def read_files_and_coordinates(file_path_list, combine_thickness):
 
             print(f"合併結果: {combined_soil_types}")
             combined_results[file_path] = combined_soil_types
-            markov_matrix.append(combined_soil_types)
 
         except Exception as e:
             print(f"讀取檔案 {file_path} 時發生錯誤: {e}")
@@ -115,18 +114,26 @@ def read_files_and_coordinates(file_path_list, combine_thickness):
     # 將合併結果轉為 DataFrame，欄為檔案名稱，列為位置
     max_length = max(len(row) for row in combined_results.values()) if combined_results else 0
     combined_df = pd.DataFrame(
-        {f"檔案 {i+1}": value + [None] * (max_length - len(value)) for i, value in enumerate(combined_results.values())},
-        index=[f"Depth {i+1}" for i in range(max_length)]
+        {f"檔案 {i+1}": value + [None] * (max_length - len(value)) for i, value in enumerate(combined_results.values())}
     )
 
-    # 把markov_matrix內nan值改為0
-    for i in range(len(combined_df)):
-        for j in range(len(combined_df[i])):
-            if combined_df[i][j] is None:
-                combined_df[i][j] = 0
-    print("\n合併結果 DataFrame:")
-    print(combined_df)
+    # 在 DataFrame 頂部插入距離作為新行
+    distance_row = pd.DataFrame([file_distance_list], columns=combined_df.columns)
+    combined_df = pd.concat([distance_row, combined_df], ignore_index=True)
+
+    # 把combined_df裡的NAN值替換成0
+    combined_df.fillna(0, inplace=True)
+    
+    # 儲存合併結果為 Excel 檔案
+    combined_df.to_excel("合併結果.xlsx", index=False)
+
+    # 儲存合併結果為 JSON 檔案
+    with open("合併結果.json", "w") as f:
+        json.dump(combined_results, f)
+
+
     return combined_df
+
 
 
 

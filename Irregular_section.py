@@ -5,7 +5,8 @@ import matplotlib.pyplot as plt
 from collections import Counter
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-
+import subprocess
+import json
 # -----------testing file----------------
 Matrix4D = "test.csv"
 Matrix5D = '5DMatrix.csv'
@@ -15,8 +16,15 @@ eightSoil='8soil.csv'
 CECI='CECI_borehole.csv'
 CTCI='CTCI.csv'
 # -----------testing file----------------
+# -----------call simplify_data.py----------------
+subprocess.run(["python", "create_dataframe.py"])
+# 打開檔案路徑列表
+with open('合併結果.json', 'r') as f:
+    combined_df = json.load(f)
+
+# -----------call simplify_data.py----------------
 # file preprocessing
-entire_file = pd.read_csv(CECI, delimiter=",").fillna(0).values # 讀取文件空值全部補0
+entire_file = pd.read_csv(combined_df, delimiter=",").fillna(0).values # 讀取文件空值全部補0
 entire_matrix = entire_file[1:, :]  # skip first column 第一行是位置
 Hole_distance = entire_file[0]
 initial_array = entire_file[1]
