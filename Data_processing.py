@@ -183,23 +183,141 @@ def process_file(file, thickness_threshold):
 
     # 將處理後的資料存入新的 Excel 檔案
     processed_file = file.replace('.xlsx', '_processed.xlsx')
+    # 把處理好的資料路徑存入列表
+    
     df_copy.to_excel(processed_file, index=False)
     created_file.append(processed_file)
+    with open('created_file.json', 'w') as f:
+        json.dump(created_file, f)
     print(f'處理完成，已儲存：{processed_file}')
     return processed_file
 
+def how_much_file_to_input():
+    root = tk.Tk()
+    root.withdraw()
+    file_count = simpledialog.askinteger("檔案數量", "請輸入要處理的檔案數量:")
+    if file_count is None:
+        file_count = 2  # 默認為2
+    root.destroy()
+    return file_count
+
+# 輸入鑽孔資訊
+def input_drilling_info(file_count):
+    """
+    顯示自定義視窗，讓使用者在同一個視窗中輸入鑽孔名稱及位置資訊。
+    
+    Args:
+        file_count (int): 需要輸入的鑽孔數量。
+    
+    Returns:
+        tuple: 兩個列表，分別儲存鑽孔名稱和位置。
+    """
+    hole_names = []  # 儲存鑽孔名稱
+    hole_locations = []  # 儲存鑽孔位置
+
+    # 自定義輸入窗口
+    def ask_drilling_info(i):
+        """
+        創建輸入窗口，供用戶輸入名稱和位置。
+        """
+        # 創建新視窗
+        popup = tk.Toplevel()
+        popup.title(f"第 {i + 1} 組鑽孔資訊")
+
+        # 標籤和輸入框：鑽孔名稱
+        tk.Label(popup, text="鑽孔名稱:").grid(row=0, column=0, padx=10, pady=10)
+        hole_name_var = tk.StringVar()
+        tk.Entry(popup, textvariable=hole_name_var).grid(row=0, column=1, padx=10, pady=10)
+
+        # 標籤和輸入框：鑽孔位置
+        tk.Label(popup, text="鑽孔位置:").grid(row=1, column=0, padx=10, pady=10)
+        hole_location_var = tk.StringVar()
+        tk.Entry(popup, textvariable=hole_location_var).grid(row=1, column=1, padx=10, pady=10)
+
+        # 確定按鈕
+        def submit():
+            hole_names.append(hole_name_var.get())  # 將名稱儲存到 hole_names 列表
+            hole_locations.append(hole_location_var.get())  # 將位置儲存到 hole_locations 列表
+            popup.destroy()
+
+        tk.Button(popup, text="確定", command=submit).grid(row=2, column=0, columnspan=2, pady=10)
+
+        # 等待視窗完成輸入
+        popup.grab_set()
+        popup.wait_window(popup)
+
+    # 創建主窗口（隱藏）
+    root = tk.Tk()
+    root.withdraw()
+
+    # 按次數顯示輸入窗口
+    for i in range(file_count):
+        ask_drilling_info(i)
+
+    root.destroy()  # 關閉主窗口
+    return hole_names, hole_locations  # 返回兩個列表
+
+
 # 用清單儲存每次處理後的檔案路徑
 processed_files = []
+import pandas as pd
+
 def main():
     # 獲取閾值並初始化列表儲存處理結果
     thickness_threshold = get_thickness_threshold()
     processed_files = []
-    
-    # 假設處理兩個檔案
-    for i in range(2):
-        file = select_file()
-        processed_file = process_file(file, thickness_threshold)
-        processed_files.append(processed_file)
+    file_list = []
+    file_count = how_much_file_to_input()
+    hole_names, hole_locations = input_drilling_info(file_count)  # 獲取名稱和位置
+
+    # 初始化 Markov 矩陣，包含 hole_names 和 hole_locations
+    markov_matrix = pd.DataFrame(columns=hole_names)
+    markov_matrix.loc[0] = hole_locations  # 第 2 行為鑽孔位置
+
+    # 處理檔案資料
+    for i in range(file_count):
+        try:
+            file = select_file()
+            processed_file = process_file(file, thickness_threshold)
+            processed_files.append(processed_file)
+
+            # 嘗試讀取 Excel 資料
+            df = pd.read_excel(processed_file)
+            if '合併後' in df.columns:  # 確保存在 '合併後' 欄位
+                # 取得 '合併後' 欄位資料
+                new_data = df['合併後']
+                print(f"new_data (檔案{i+1}): {new_data}")
+
+                # 動態擴展行數（如果需要）
+                additional_rows = len(new_data) - (len(markov_matrix) - 2)
+                if additional_rows > 0:
+                    for _ in range(additional_rows):
+                        markov_matrix.loc[len(markov_matrix)] = [None] * len(markov_matrix.columns)
+
+                # 插入新資料到對應列
+                markov_matrix.iloc[1:1+len(new_data), i] = new_data.values
+            else:
+                print(f"警告: 檔案 {processed_file} 缺少 '合併後' 欄位，插入空值。")
+                # 插入空值列
+                markov_matrix.iloc[1:, i] = None
+
+        except Exception as e:
+            print(f"處理檔案 {file} 時出錯: {e}")
+            # 發生錯誤時插入空值列
+            markov_matrix.iloc[1:, i] = None
+    # 刪掉最後一行
+    markov_matrix = markov_matrix.dropna(axis=1, how='all')
+    # 將 NaN 填充為 0，若有需要
+    markov_matrix = markov_matrix.fillna(0)
+    print("Markov 矩陣:")
+    print(markov_matrix)
+
+    # 儲存為 CSV
+    markov_matrix.to_csv("markov_matrix.csv", index=False)
+    print("Markov 矩陣已儲存為 'markov_matrix.csv'。")
+
+
+
     
     # 將處理後的檔案列表寫入文件
     with open("processed_files.xlsx", "w") as f:

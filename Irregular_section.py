@@ -7,24 +7,25 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import subprocess
 import json
+import tkinter as tk
 # -----------testing file----------------
 Matrix4D = "test.csv"
 Matrix5D = '5DMatrix.csv'
 sixHole = '6Hole.csv'
 test='test - 複製.csv'
 eightSoil='8soil.csv'
-CECI='CECI_borehole.csv'
+CECI='markov_matrix.csv'
 CTCI='CTCI.csv'
 # -----------testing file----------------
-# -----------call simplify_data.py----------------
-subprocess.run(["python", "create_dataframe.py"])
-# 打開檔案路徑列表
-with open('合併結果.json', 'r') as f:
-    combined_df = json.load(f)
 
 # -----------call simplify_data.py----------------
+#　subprocess.run(["python", "Data_processing.py"])
+# 打開檔案'合併結果.csv'
+entire_file = pd.read_csv('markov_matrix.csv')
+# -----------call simplify_data.py----------------
+
 # file preprocessing
-entire_file = pd.read_csv(combined_df, delimiter=",").fillna(0).values # 讀取文件空值全部補0
+entire_file = pd.read_csv(CECI, delimiter=",").fillna(0).values # 讀取文件空值全部補0
 entire_matrix = entire_file[1:, :]  # skip first column 第一行是位置
 Hole_distance = entire_file[0]
 initial_array = entire_file[1]
@@ -54,14 +55,14 @@ A = W * D
 HoleLocation_entire=(Hole_distance/interval).astype(int)
 HoleLocation_entire[0]=0
 
-print('最大位置',Hole_distance.max())
-print('最深資料(個):', D)
-print('寬度', W,'深度', D)
-print('共有', typenumber, '種土壤材質')
-print("土壤代號",unique_numbers,entire_matrix[0])
-print('mapping:', mapping)
-# 定義各個孔洞的位置
-print('孔洞完整位置:', HoleLocation_entire)
+# print('最大位置',Hole_distance.max())
+# print('最深資料(個):', D)
+# print('寬度', W,'深度', D)
+# print('共有', typenumber, '種土壤材質')
+# print("土壤代號",unique_numbers,entire_matrix[0])
+# print('mapping:', mapping)
+# # 定義各個孔洞的位置
+# print('孔洞完整位置:', HoleLocation_entire)
 
 # 計算轉移概率矩陣的函數
 def calculate_transition_matrix(matrix,hole_location):
@@ -87,13 +88,13 @@ def calculate_transition_matrix(matrix,hole_location):
                     group_number[0][i] = mapping[type]
                 else:
                     continue
-    print('group_number:',group_number[0])
+    # print('group_number:',group_number[0])
     
     for i in range(D):
         for j in range(len(hole_location)):
             group_number[i][(hole_location[j])] = matrix[i][j]
     T_t_V = np.zeros(len(matrix))
-    print('T_t_V:',T_t_V)
+    # print('T_t_V:',T_t_V)
     soiltype_V = {}
                
 
@@ -119,7 +120,7 @@ def calculate_transition_matrix(matrix,hole_location):
     soiltype_V = Counter(matrix.flatten())
     del soiltype_V[0]  # Remove count of zeros, if necessary
     soiltype_V = sorted(soiltype_V.items(), key=op.itemgetter(0), reverse=False)
-    print('soiltype_V:',soiltype_V)
+    # print('soiltype_V:',soiltype_V)
     VPCM = np.zeros((typenumber, typenumber))
     Tmatrix_V = np.zeros((typenumber, typenumber))
 
@@ -163,8 +164,8 @@ def calculate_transition_matrix(matrix,hole_location):
 
 # 計算 HoleLocation_entire 的轉移矩陣
 Tmatrix_V_entire, Tmatrix_H_entire ,group_number_entire= calculate_transition_matrix(entire_matrix,HoleLocation_entire)
-print('Tmatrix_V_entire:\n',Tmatrix_V_entire)
-print('Tmatrix_H_entire:\n',Tmatrix_H_entire)
+# print('Tmatrix_V_entire:\n',Tmatrix_V_entire)
+# print('Tmatrix_H_entire:\n',Tmatrix_H_entire)
 # 預測地質類型的函數
 
 def predict_geological_types(Tmatrix_V, Tmatrix_H, HoleLocation,group_number):
@@ -233,14 +234,17 @@ def predict_geological_types(Tmatrix_V, Tmatrix_H, HoleLocation,group_number):
 
             # 進行預測
             predict_type = np.random.choice(transitionName, replace=True, p=current_matrix)
-            if i in HoleLocation:
-                print('k_sum:',k_sum,'f_sum:',f_sum,'Nx:',Nx)
+            # if i in HoleLocation:
+            #     print('k_sum:',k_sum,'f_sum:',f_sum,'Nx:',Nx)
             group_number[layer][i] =predict_type
     return group_number
 
 
 predict_result_entire = predict_geological_types(Tmatrix_V_entire, Tmatrix_H_entire, HoleLocation_entire,group_number_entire)
-print('predict_result_entire:\n',predict_result_entire)
+print(len(predict_result_entire))
+# 儲存預測結果
+np.savetxt('predict_result_entire.csv', predict_result_entire, delimiter=',', fmt='%d')
+# print('predict_result_entire:\n',predict_result_entire)
 
 def irregular_shift(predict_result_entire, max_shift):
     """
@@ -272,9 +276,9 @@ def irregular_shift(predict_result_entire, max_shift):
     return irregular_matrix
 
 # 不規則矩陣
-max_shift = 50
+max_shift = 0  # 最大移動深度
 irregular_matrix = irregular_shift(predict_result_entire, max_shift)
-print('irregular_matrix:\n',irregular_matrix)
+# print('irregular_matrix:\n',irregular_matrix)
 
 D=irregular_matrix.shape[0]
 
@@ -282,8 +286,8 @@ D=irregular_matrix.shape[0]
 # 可視化地質類型分布
 mapping_key = list(mapping.keys())
 mapping_value = list(mapping.values())
-print('mapping_key:',mapping_key)
-print('mapping_value:',mapping_value)
+# print('mapping_key:',mapping_key)
+# print('mapping_value:',mapping_value)
 original_ticks = np.arange(0, int(Hole_distance.max() / interval), 100)
 # 缩放后的 x 轴刻度标签
 scaled_labels = (original_ticks * interval).astype(int)
@@ -352,3 +356,109 @@ plt.ylabel('Depth (units)')
 plt.tight_layout()
 plt.savefig('Prediction_with_legend_side.png')
 plt.show()
+
+# -----------------預測位置輸入視窗-----------------
+# def predict_location_input():
+#     def submit():
+#         # Get input from the entry widget
+#         location = entry.get()
+#         # Store it in a variable and close the GUI
+#         nonlocal user_input
+#         user_input = location
+#         root.destroy()
+
+#     root = tk.Tk()
+#     root.title("預測位置輸入")
+#     root.geometry("300x150")
+
+#     # Label
+#     label = tk.Label(root, text="請輸入預測位置:")
+#     label.pack(pady=10)
+
+#     # Entry widget for user input
+#     entry = tk.Entry(root, width=25)
+#     entry.pack(pady=5)
+
+#     # Button to submit the input
+#     button = tk.Button(root, text="確認", command=submit)
+#     button.pack(pady=10)
+
+#     # Variable to store user input
+#     user_input = None
+
+#     # Start the Tkinter event loop
+#     root.mainloop()
+
+#     return user_input
+
+# # Get the user input
+# user_input = predict_location_input()
+
+# def predict_data(predict_result_entire, predict_location):
+#     predict_location = int(predict_location)
+#     col = int(predict_location / interval)
+#     predict_location_soiltype = predict_result_entire[:, col]
+#     print(f"Predicted soil types at location {predict_location_soiltype}")
+
+#     with open('file_path_list.json', 'r') as file:
+#         file_path_list = json.load(file)
+#     print('file_path_list:', file_path_list)
+
+#     predict_df = pd.DataFrame({
+#         "Location": np.arange(len(predict_location_soiltype)),
+#         "SoilType": predict_location_soiltype,
+#         "Depth (m)": np.arange(len(predict_location_soiltype)) * 0.02,
+#         "qc (MPa)": np.zeros(len(predict_location_soiltype)),
+#         "fs (MPa)": np.zeros(len(predict_location_soiltype)),
+#         "u (MPa)": np.zeros(len(predict_location_soiltype)),
+#     })
+
+#     dfs = [pd.read_excel(file_path) for file_path in file_path_list]
+#     print('dfs:', dfs)
+
+#     for i in range(len(predict_location_soiltype)):
+#         exist_qc, exist_fs, exist_u = [], [], []
+
+#         for j, df in enumerate(dfs):
+#             if i < len(df) and df['Soil Type'][i] == predict_location_soiltype[i]:
+#                 exist_qc.append(df['qc (MPa)'][i])
+#                 exist_fs.append(df['fs (MPa)'][i])
+#                 exist_u.append(df['u (MPa)'][i])
+
+#         if exist_qc:
+#             predict_df.loc[i, 'qc (MPa)'] = np.random.choice(exist_qc)
+#             predict_df.loc[i, 'fs (MPa)'] = np.random.choice(exist_fs)
+#             predict_df.loc[i, 'u (MPa)'] = np.random.choice(exist_u)
+#         else:
+#             depth_list, qc_list, fs_list, u_list = [], [], [], []
+#             for k in range(1, min(11, i + 1)):
+#                 if predict_location_soiltype[i - k] == predict_location_soiltype[i]:
+#                     depth_list.append(predict_df.loc[i - k, 'Depth (m)'])
+#                     qc_list.append(predict_df.loc[i - k, 'qc (MPa)'])
+#                     fs_list.append(predict_df.loc[i - k, 'fs (MPa)'])
+#                     u_list.append(predict_df.loc[i - k, 'u (MPa)'])
+
+#             if len(depth_list) >= 3:
+#                 qc_trend = np.polyfit(depth_list, qc_list, 2)
+#                 fs_trend = np.polyfit(depth_list, fs_list, 2)
+#                 u_trend = np.polyfit(depth_list, u_list, 2)
+#                 predict_df.loc[i, 'qc (MPa)'] = np.polyval(qc_trend, (i + 1) * 0.02)
+#                 predict_df.loc[i, 'fs (MPa)'] = np.polyval(fs_trend, (i + 1) * 0.02)
+#                 predict_df.loc[i, 'u (MPa)'] = np.polyval(u_trend, (i + 1) * 0.02)
+#             else:
+#                 predict_df.loc[i, ['qc (MPa)', 'fs (MPa)', 'u (MPa)']] = np.nan
+#     print('predict_df:',predict_df)
+#     # 將預測結果保存為Excel文件
+#     predict_df.to_excel('predict_result.xlsx', index=False)
+#     return predict_df
+
+
+
+
+                
+
+
+
+
+# predict_data = predict_data(predict_result_entire, user_input)
+# print('done')

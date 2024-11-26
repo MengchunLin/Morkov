@@ -124,12 +124,11 @@ def read_files_and_coordinates(file_path_list, combine_thickness):
     # 把combined_df裡的NAN值替換成0
     combined_df.fillna(0, inplace=True)
     
-    # 儲存合併結果為 Excel 檔案
-    combined_df.to_excel("合併結果.xlsx", index=False)
+    # 儲存合併結果為csv檔案
+    combined_df.to_csv("合併結果.csv", index=False)
 
     # 儲存合併結果為 JSON 檔案
-    with open("合併結果.json", "w") as f:
-        json.dump(combined_results, f)
+    combined_df.to_json("合併結果.json")
 
 
     return combined_df
