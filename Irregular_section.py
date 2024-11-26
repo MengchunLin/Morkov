@@ -45,13 +45,17 @@ transitionName = np.arange(1,typenumber+1)
 
 
 # 定義模型的間隔、寬度、深度、面積、孔洞數量和地質類型數量等參數
-interval = 0.5
+interval = 1
 W = int(Hole_distance.max() / interval) + 1
-D = int(entire_matrix.shape[0] ) 
+D = int(entire_matrix.shape[0]/ interval)
+print('D:',D)
+print('W:',W)
+
 
 denominator = 0
 molecular = 0
 A = W * D
+print('A:',A)
 HoleLocation_entire=(Hole_distance/interval).astype(int)
 HoleLocation_entire[0]=0
 
@@ -239,7 +243,7 @@ def predict_geological_types(Tmatrix_V, Tmatrix_H, HoleLocation,group_number):
             group_number[layer][i] =predict_type
     return group_number
 
-
+print('predicting...')
 predict_result_entire = predict_geological_types(Tmatrix_V_entire, Tmatrix_H_entire, HoleLocation_entire,group_number_entire)
 print(len(predict_result_entire))
 # 儲存預測結果

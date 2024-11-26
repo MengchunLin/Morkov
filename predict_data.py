@@ -113,7 +113,7 @@ def predict_data(predict_result_entire, predict_location):
                 for k in range(1, i + 1):
                     if predict_location_soiltype[i - k] == predict_location_soiltype[i]:
                         # 再向前找10個點
-                        for z in range(k, k-10, -1):
+                        for z in range(k, k-100, -1):
                             depth_list.append(predict_df.loc[i - k, 'Depth (m)'])
                             qc_list.append(predict_df.loc[i - k, 'qc (MPa)'])
                             fs_list.append(predict_df.loc[i - k, 'fs (MPa)'])
