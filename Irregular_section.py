@@ -8,6 +8,7 @@ import matplotlib.patches as mpatches
 import subprocess
 import json
 import tkinter as tk
+import time
 # -----------testing file----------------
 Matrix4D = "test.csv"
 Matrix5D = '5DMatrix.csv'
@@ -17,7 +18,8 @@ eightSoil='8soil.csv'
 CECI='markov_matrix.csv'
 CTCI='CTCI.csv'
 # -----------testing file----------------
-
+# 記錄開始時間
+start_time = time.time()
 # -----------call simplify_data.py----------------
 #　subprocess.run(["python", "Data_processing.py"])
 # 打開檔案'合併結果.csv'
@@ -361,6 +363,12 @@ plt.tight_layout()
 plt.savefig('Prediction_with_legend_side.png')
 plt.show()
 
+# 記錄結束時間
+end_time = time.time()
+
+# 計算運行時間（以秒為單位）
+execution_time = end_time - start_time
+print(f"程式運行時間: {execution_time:.2f} 秒")
 # -----------------預測位置輸入視窗-----------------
 # def predict_location_input():
 #     def submit():

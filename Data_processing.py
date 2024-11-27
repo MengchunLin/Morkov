@@ -309,15 +309,11 @@ def main():
     markov_matrix = markov_matrix.dropna(axis=1, how='all')
     # 將 NaN 填充為 0，若有需要
     markov_matrix = markov_matrix.fillna(0)
-    group_size = thickness_threshold//2
-    def most_common(group):
-        return group.mode().iloc[0]
-    markov_matrix_1 =df.groupby(df.index // group_size).agg(most_common)
-    print("Markov 矩陣:")
-    print(markov_matrix_1)
+    
+    print(markov_matrix)
 
     # 儲存為 CSV
-    markov_matrix_1.to_csv("markov_matrix.csv", index=False)
+    markov_matrix.to_csv("markov_matrix.csv", index=False)
     print("Markov 矩陣已儲存為 'markov_matrix.csv'。")
 
 
