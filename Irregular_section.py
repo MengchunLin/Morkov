@@ -9,6 +9,7 @@ import subprocess
 import json
 import tkinter as tk
 import time
+import tkinter.messagebox as messagebox
 # -----------testing file----------------
 Matrix4D = "test.csv"
 Matrix5D = '5DMatrix.csv'
@@ -27,10 +28,13 @@ entire_file = pd.read_csv('markov_matrix.csv')
 # -----------call simplify_data.py----------------
 
 # file preprocessing
-entire_file = pd.read_csv(CECI, delimiter=",").fillna(0).values # 讀取文件空值全部補0
-entire_matrix = entire_file[1:, :]  # skip first column 第一行是位置
-Hole_distance = entire_file[0]
-initial_array = entire_file[1]
+entire_file = pd.read_csv(CECI, delimiter=",",header=None).fillna(0).values # 讀取文件空值全部補0
+# entire_file沒有標題，所以第一行是數據
+entire_matrix = entire_file[2:, :]  # skip first column 第一行是名稱
+# 取得標題作為孔洞名稱
+Hole_name = entire_file[0]
+Hole_distance = entire_file[1]
+initial_array = entire_file[2]
 # 取得土壤種類
 unique_numbers = np.unique(entire_matrix)
 # 從unique_numbers過濾掉0
@@ -48,8 +52,10 @@ transitionName = np.arange(1,typenumber+1)
 
 # 定義模型的間隔、寬度、深度、面積、孔洞數量和地質類型數量等參數
 interval = 1
-W = int(Hole_distance.max() / interval) + 1
-D = int(entire_matrix.shape[0]/ interval)
+# parameter = int(Hole_distance.max()/entire_matrix.shape[0])
+parameter = 1
+W = int(int(Hole_distance.max()) / parameter) + 1
+D = int(entire_matrix.shape[0])
 print('D:',D)
 print('W:',W)
 
@@ -58,7 +64,7 @@ denominator = 0
 molecular = 0
 A = W * D
 print('A:',A)
-HoleLocation_entire=(Hole_distance/interval).astype(int)
+HoleLocation_entire=(Hole_distance/parameter).astype(int)
 HoleLocation_entire[0]=0
 
 # print('最大位置',Hole_distance.max())
@@ -247,10 +253,7 @@ def predict_geological_types(Tmatrix_V, Tmatrix_H, HoleLocation,group_number):
 
 print('predicting...')
 predict_result_entire = predict_geological_types(Tmatrix_V_entire, Tmatrix_H_entire, HoleLocation_entire,group_number_entire)
-print(len(predict_result_entire))
-# 儲存預測結果
-np.savetxt('predict_result_entire.csv', predict_result_entire, delimiter=',', fmt='%d')
-# print('predict_result_entire:\n',predict_result_entire)
+
 
 def irregular_shift(predict_result_entire, max_shift):
     """
@@ -288,6 +291,49 @@ irregular_matrix = irregular_shift(predict_result_entire, max_shift)
 
 D=irregular_matrix.shape[0]
 
+def predict_location_input():
+    def submit():
+        # Get input from the entry widget
+        location = entry.get()
+        # Store it in a variable and close the GUI
+        nonlocal user_input
+        user_input = location
+        root.destroy()
+
+    root = tk.Tk()
+    root.title("預測位置輸入")
+    root.geometry("300x150")
+
+    # Label
+    label = tk.Label(root, text="請輸入預測位置:")
+    label.pack(pady=10)
+
+    # Entry widget for user input
+    entry = tk.Entry(root, width=25)
+    entry.pack(pady=5)
+
+    # Button to submit the input
+    button = tk.Button(root, text="確認", command=submit)
+    button.pack(pady=10)
+
+    # Variable to store user input
+    user_input = None
+
+    # Start the Tkinter event loop
+    root.mainloop()
+
+    return user_input 
+
+# 預測位置輸入
+user_input = predict_location_input()
+user_input = int(int(user_input)/parameter)
+
+#　輸出預測位置的地質類型
+predict_borehole = predict_result_entire[:, user_input]
+# 內容四捨五入到整數
+predict_borehole = np.round(predict_borehole).astype(int)
+# 儲存predict_borehole
+np.savetxt('predict_borehole.txt',predict_borehole,fmt='%d')
 
 # 可視化地質類型分布
 mapping_key = list(mapping.keys())
@@ -306,6 +352,15 @@ soil_colors = {
     5: 'burlywood',   
 }
 
+# 定義名稱
+soil_names = {
+    1: 'Sand',
+    2: 'Silty Sand',
+    3: 'Sandy Silt',
+    4: 'Clayey Silt',
+    5: 'Clay',
+}
+
 import matplotlib.colors as mcolors
 # 創建自定義的離散顏色映射
 colors = [soil_colors[i] for i in range(1, len(soil_colors) + 1)]
@@ -318,8 +373,10 @@ plt.figure(figsize=(8, 4), dpi=150)
 im = plt.imshow(irregular_matrix, cmap=cmap, origin='upper', aspect='auto')
 
 # 創建圖例
-patches = [mpatches.Patch(color=soil_colors[i], label=f"Type {int(mapping_key[i-1])}") 
-          for i in range(1, len(mapping) + 1)]
+patches = [
+    mpatches.Patch(color=soil_colors[i], label=f"{soil_names[i]} ({i})")
+    for i in range(1, len(soil_colors) + 1)
+]
 
 plt.legend(
     handles=patches,
@@ -331,14 +388,23 @@ plt.legend(
     frameon=True
 )
 
-# 繪製鑽孔位置的垂直線
-for i in HoleLocation_entire:
-    plt.axvline(x=i, color='black', linestyle='--', linewidth=0.5)
-    plt.axvline(x=i-interval, color='black', linestyle='--', linewidth=0.5)
+# 繪製鑽孔位置的垂直線與標註
+for i, name in zip(HoleLocation_entire, Hole_name):
+    if i == 0:
+        i = 0.5
+        plt.axvline(x=i, color='sienna', linestyle='-', linewidth=2)
+        # 標註名稱
+        plt.text(i, 0, name, color='black', fontsize=8, ha='center', va='bottom')
+    else:
+        print('i:',i)
+        plt.axvline(x=i, color='sienna', linestyle='-', linewidth=2)
+        # 標註名稱
+        plt.text(i, 0, name, color='black', fontsize=8, ha='center', va='bottom')
+plt.axline((user_input, 0), (user_input, D), color='red', linestyle='--', linewidth=1)   
 
 # 設置刻度
-original_ticks = np.arange(0, int(Hole_distance.max() / interval), 100)
-scaled_labels = (original_ticks * interval).astype(int)
+original_ticks = np.arange(0, int(Hole_distance.max() / parameter), 100/parameter)
+scaled_labels = (original_ticks * parameter).astype(int)
 
 plt.xticks(
     ticks=original_ticks,
@@ -346,22 +412,12 @@ plt.xticks(
     fontsize=10
 )
 plt.yticks(
-    ticks=np.arange(0, D, 200),
-    labels=np.arange(0, D, 200),
+    ticks=np.arange(0, D*0.02, 10),
+    labels=np.arange(0, D*0.02, 10),
     fontsize=10
 )
 
-# 設置圖形外觀
-plt.gca().set_aspect('auto')
-plt.xlim(0, W)
-plt.ylim(D, 0)
-plt.tight_layout(rect=[0, 0, 0.9, 1])
-plt.title('Prediction (top to bottom)')
-plt.xlabel('Width (units)')
-plt.ylabel('Depth (units)')
-plt.tight_layout()
-plt.savefig('Prediction_with_legend_side.png')
-plt.show()
+
 
 # 記錄結束時間
 end_time = time.time()
@@ -369,42 +425,21 @@ end_time = time.time()
 # 計算運行時間（以秒為單位）
 execution_time = end_time - start_time
 print(f"程式運行時間: {execution_time:.2f} 秒")
+# 設置圖形外觀
+plt.gca().set_aspect('auto')
+plt.xlim(0, W)
+plt.ylim(D, 0)
+plt.tight_layout(rect=[0, 0, 0.9, 1])
+plt.title('Markov Prediction',pad=20)
+plt.xlabel('Width (units)')
+plt.ylabel('Depth (units)')
+plt.tight_layout()
+plt.savefig('Prediction_with_legend_side.png')
+plt.show()
+
+
 # -----------------預測位置輸入視窗-----------------
-# def predict_location_input():
-#     def submit():
-#         # Get input from the entry widget
-#         location = entry.get()
-#         # Store it in a variable and close the GUI
-#         nonlocal user_input
-#         user_input = location
-#         root.destroy()
 
-#     root = tk.Tk()
-#     root.title("預測位置輸入")
-#     root.geometry("300x150")
-
-#     # Label
-#     label = tk.Label(root, text="請輸入預測位置:")
-#     label.pack(pady=10)
-
-#     # Entry widget for user input
-#     entry = tk.Entry(root, width=25)
-#     entry.pack(pady=5)
-
-#     # Button to submit the input
-#     button = tk.Button(root, text="確認", command=submit)
-#     button.pack(pady=10)
-
-#     # Variable to store user input
-#     user_input = None
-
-#     # Start the Tkinter event loop
-#     root.mainloop()
-
-#     return user_input
-
-# # Get the user input
-# user_input = predict_location_input()
 
 # def predict_data(predict_result_entire, predict_location):
 #     predict_location = int(predict_location)

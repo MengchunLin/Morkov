@@ -230,7 +230,7 @@ def input_drilling_info(file_count):
         tk.Entry(popup, textvariable=hole_name_var).grid(row=0, column=1, padx=10, pady=10)
 
         # 標籤和輸入框：鑽孔位置
-        tk.Label(popup, text="鑽孔位置:").grid(row=1, column=0, padx=10, pady=10)
+        tk.Label(popup, text="鑽孔x軸投影座標:").grid(row=1, column=0, padx=10, pady=10)
         hole_location_var = tk.StringVar()
         tk.Entry(popup, textvariable=hole_location_var).grid(row=1, column=1, padx=10, pady=10)
 
