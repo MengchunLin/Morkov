@@ -1,8 +1,11 @@
 import pandas as pd
 import numpy as np
 import tkinter as tk
-from tkinter import filedialog, simpledialog
+from tkinter import filedialog, simpledialog, messagebox
 import json
+from collections import Counter
+import pandas as pd
+
 
 created_file = []
 # 選擇檔案
@@ -257,6 +260,72 @@ def input_drilling_info(file_count):
     root.destroy()  # 關閉主窗口
     return hole_names, hole_locations  # 返回兩個列表
 
+# 是否需要更進一步簡化土層
+def if_further_simplify_soil_layer():
+    root = tk.Tk()
+    root.withdraw()
+    further_simplify = simpledialog.askstring("簡化土層", "是否需要進一步簡化土層行數？(Y/N)")
+    if further_simplify is None:
+        further_simplify = 'N'  # 默認為N
+    elif further_simplify == 'y' or further_simplify == 'Y':
+        further_simplify = 'Y'
+    root.destroy()
+    return further_simplify
+
+from collections import Counter
+import pandas as pd
+import numpy as np
+
+def further_simplify_soil_layer(markov_matrix):
+    """
+    Simplify a Markov matrix by aggregating soil layer data over specified intervals.
+    
+    Args:
+        markov_matrix (pd.DataFrame): Input Markov matrix representing soil layers
+    
+    Returns:
+        pd.DataFrame: Simplified Markov matrix
+    """
+    # Validate input
+    if not isinstance(markov_matrix, pd.DataFrame) or markov_matrix.empty:
+        raise ValueError("Input must be a non-empty pandas DataFrame")
+    
+    # Extract first and second rows
+    first_row = markov_matrix.iloc[0]
+    
+    # Calculate length and parameter
+    length = len(markov_matrix) - 2
+    print(f"Length: {length}")
+    max_first_row = max(first_row)
+    
+    if max_first_row == 0:
+        raise ValueError("Maximum value in first row cannot be zero")
+    
+    parameter = int(length / float(max_first_row))
+    print(f"Parameter: {parameter}")
+    
+    # Initialize simplified matrix
+    num_rows = (length // parameter) + 1
+
+    simplify_markov_matrix = pd.DataFrame(index=range(num_rows), columns=markov_matrix.columns)
+    simplify_markov_matrix.loc[0] = first_row
+    
+    # Aggregate soil layers
+    for c in range(len(first_row)):
+        col_data = markov_matrix.iloc[:, c]
+        # Process data in intervals
+        for i in range(0, length, parameter):
+            end = min(i + parameter, length)
+            range_data = col_data[i:end]
+            
+            if not range_data.empty:
+                counter = Counter(range_data)
+                most_common = counter.most_common(1)[0][0]
+                simplify_markov_matrix.iloc[1+i // parameter,c] = most_common
+    return simplify_markov_matrix
+
+
+    
 
 # 用清單儲存每次處理後的檔案路徑
 processed_files = []
@@ -309,15 +378,30 @@ def main():
     markov_matrix = markov_matrix.dropna(axis=1, how='all')
     # 將 NaN 填充為 0，若有需要
     markov_matrix = markov_matrix.fillna(0)
+
+    # 進一步簡化土層
+    further_simplify = if_further_simplify_soil_layer()
+    if further_simplify == 'Y':
+        markov_matrix = further_simplify_soil_layer(markov_matrix)
+        print("已進一步簡化土層。")
+
+        D = len(markov_matrix.columns)
+        W = len(markov_matrix) - 2
+
+        # 建立視窗告訴使用者D,W
+        messagebox.showinfo("提示", f"寬度: {W} 單位\n深度: {D} 單位")
+
+        # 再次檢查是否需要進一步簡化土層
+        further_simplify = if_further_simplify_soil_layer()
+        if further_simplify == 'Y':
+            markov_matrix = further_simplify_soil_layer(markov_matrix)
+            print("已進一步簡化土層。")
     
     print(markov_matrix)
 
     # 儲存為 CSV
     markov_matrix.to_csv("markov_matrix.csv", index=False)
     print("Markov 矩陣已儲存為 'markov_matrix.csv'。")
-
-
-
     
     # 將處理後的檔案列表寫入文件
     with open("processed_files.xlsx", "w") as f:

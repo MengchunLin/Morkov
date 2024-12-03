@@ -52,19 +52,20 @@ transitionName = np.arange(1,typenumber+1)
 
 # 定義模型的間隔、寬度、深度、面積、孔洞數量和地質類型數量等參數
 interval = 1
-# parameter = int(Hole_distance.max()/entire_matrix.shape[0])
-parameter = 1
-W = int(int(Hole_distance.max()) / parameter) + 1
+W = int(int(Hole_distance.max())) + 1
 D = int(entire_matrix.shape[0])
 print('D:',D)
 print('W:',W)
+
+
+
 
 
 denominator = 0
 molecular = 0
 A = W * D
 print('A:',A)
-HoleLocation_entire=(Hole_distance/parameter).astype(int)
+HoleLocation_entire=(Hole_distance).astype(int)
 HoleLocation_entire[0]=0
 
 # print('最大位置',Hole_distance.max())
@@ -326,7 +327,7 @@ def predict_location_input():
 
 # 預測位置輸入
 user_input = predict_location_input()
-user_input = int(int(user_input)/parameter)
+user_input = int(int(user_input))
 
 #　輸出預測位置的地質類型
 predict_borehole = predict_result_entire[:, user_input]
@@ -403,8 +404,8 @@ for i, name in zip(HoleLocation_entire, Hole_name):
 plt.axline((user_input, 0), (user_input, D), color='red', linestyle='--', linewidth=1)   
 
 # 設置刻度
-original_ticks = np.arange(0, int(Hole_distance.max() / parameter), 100/parameter)
-scaled_labels = (original_ticks * parameter).astype(int)
+original_ticks = np.arange(0, int(Hole_distance.max() ), 100)
+scaled_labels = (original_ticks ).astype(int)
 
 plt.xticks(
     ticks=original_ticks,
@@ -412,8 +413,8 @@ plt.xticks(
     fontsize=10
 )
 plt.yticks(
-    ticks=np.arange(0, D*0.02, 10),
-    labels=np.arange(0, D*0.02, 10),
+    ticks=np.arange(0, D, 10),
+    labels=np.arange(0, D, 10),
     fontsize=10
 )
 
